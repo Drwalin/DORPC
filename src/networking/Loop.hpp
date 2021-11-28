@@ -21,10 +21,12 @@
 #ifndef DORPC_NETWORKING_LOOP_HPP
 #define DORPC_NETWORKING_LOOP_HPP
 
-#include <vector>
-#include <mutex>
-
 #include "networking/Event.hpp"
+
+namespace std {
+	class mutex;
+	template<typename T> class vector;
+}
 
 struct Loop {
 	struct us_loop_t* loop;
@@ -36,6 +38,10 @@ struct Loop {
 	
 	void Init(struct us_loop_t* loop);
 	void Deinit();
+	void Destroy();
+	
+	
+	void Run();
 	
 	
 	void PushEvent(Event event);
@@ -48,6 +54,8 @@ struct Loop {
 	static void InternalOnWakeup(struct us_loop_t* loop);
 	static void InternalOnPre(struct us_loop_t* loop);
 	static void InternalOnPost(struct us_loop_t* loop);
+	
+	static Loop* Make();
 };
 
 #endif

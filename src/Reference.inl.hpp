@@ -25,19 +25,19 @@
 #include "Cluster.hpp"
 
 namespace impl {
-	template<class T, typename Ret, typename... Args>
+	template<class T, typename... Args>
 	struct Call {
 		Reference<T> ref;
-		Ret (T::*method)(Args...);
+		void(T::*method)(Args...);
 		inline void Do(Args... args) {
-			Cluster::Singleton()->Call<T, Ret, Args...>(ref, method, args...);
+			Cluster::Singleton()->Call<T, Args...>(ref, method, args...);
 		}
 	};
 
-	template<class T, typename Ret, typename... Args>
-	inline Call<T, Ret, Args...> MakeCall(Reference<T> ref,
-			Ret (T::*method)(Args...)) {
-		return Call<T, Ret, Args...>{ref, method};
+	template<class T, typename... Args>
+	inline Call<T, Args...> MakeCall(Reference<T> ref,
+			void(T::*method)(Args...)) {
+		return Call<T, Args...>{ref, method};
 	}
 }
 

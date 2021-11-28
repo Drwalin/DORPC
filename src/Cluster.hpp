@@ -24,6 +24,7 @@
 #include <cinttypes>
 #include <string>
 #include <unordered_map>
+#include <unordered_set>
 #include <vector>
 
 #include "Reference.hpp"
@@ -48,18 +49,43 @@ public:
 	bool ConnectToClusterTCP(const std::string& ip, int port);
 	
 	
-	template<class T, typename Ret, typename... Args>
-	void Call(Reference<T> ref, Ret (T::*method)(Args...), Args... args);
+	template<class T, typename... Args>
+	inline void Call(Reference<T> ref, void(T::*method)(Args...), Args... args);
 	
 	
 	static Cluster* Singleton();
 	
 private:
+
+	bool IsLocal(uint64_t referenceId);
+	
+private:
+	
+	uint64_t clusterId;
 	
 	std::string certKey;
 	std::string certFile;
 	std::string certRootCA;
+	
+	struct Loop* loop;
+	std::vector<struct Context*> contexts;
+	std::unordered_set<struct Socket*> sockets;
+	
+	std::unordered_map<uint64_t, void*> localObjects;
+	std::unordered_map<uint64_t, Socket*> remoteObjects; 
 };
+
+
+
+template<class T, typename... Args>
+inline void Cluster::Call(Reference<T> ref,
+		void(T::*method)(Args...), Args... args) {
+	if(IsLocal(ref.Get())) {
+		
+	} else {
+
+	}
+}
 
 #endif
 
