@@ -18,28 +18,26 @@
 
 #pragma once
 
-#ifndef DORPC_REFERENCE_INL_HPP
-#define DORPC_REFERENCE_INL_HPP
+#ifndef DORPC_NETWORKING_EVENT_HPP
+#define DORPC_NETWORKING_EVENT_HPP
 
-#include "Reference.hpp"
-#include "Cluster.hpp"
-
-namespace impl {
-	template<class T, typename Ret, typename... Args>
-	struct Call {
-		Reference<T> ref;
-		Ret (T::*method)(Args...);
-		inline void Do(Args... args) {
-			Cluster::Singleton()->Call<T, Ret, Args...>(ref, method, args...);
-		}
+struct Event {
+	enum Type {
+		SEND,
+		CLOSE,
+		RECONNEC
 	};
-
-	template<class T, typename Ret, typename... Args>
-	inline Call<T, Ret, Args...> MakeCall(Reference<T> ref,
-			Ret (T::*method)(Args...)) {
-		return Call<T, Ret, Args...>{ref, method};
-	}
-}
+	
+	Type type;
+	union {
+		struct msgpack_sbuffer* buffer;
+		struct msgpack_sbuffer* ip;
+	};
+	union {
+		struct Socket* socket;
+		int port;
+	};
+};
 
 #endif
 

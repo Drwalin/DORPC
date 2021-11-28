@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef METHOD_INL_HPP
-#define METHOD_INL_HPP
+#ifndef DORPC_METHOD_INL_HPP
+#define DORPC_METHOD_INL_HPP
 
 #include "Method.hpp"
 

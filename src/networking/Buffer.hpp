@@ -18,28 +18,23 @@
 
 #pragma once
 
-#ifndef DORPC_REFERENCE_INL_HPP
-#define DORPC_REFERENCE_INL_HPP
+#ifndef DORPC_NETWORKING_BUFFER_HPP
+#define DORPC_NETWORKING_BUFFER_HPP
 
-#include "Reference.hpp"
-#include "Cluster.hpp"
+#include <msgpack.h>
 
-namespace impl {
-	template<class T, typename Ret, typename... Args>
-	struct Call {
-		Reference<T> ref;
-		Ret (T::*method)(Args...);
-		inline void Do(Args... args) {
-			Cluster::Singleton()->Call<T, Ret, Args...>(ref, method, args...);
-		}
-	};
+#include <mpmc_pool.hpp>
 
-	template<class T, typename Ret, typename... Args>
-	inline Call<T, Ret, Args...> MakeCall(Reference<T> ref,
-			Ret (T::*method)(Args...)) {
-		return Call<T, Ret, Args...>{ref, method};
-	}
-}
+struct Buffer {
+	Buffer();
+	~Buffer();
+	
+	msgpack_sbuffer buffer;
+	Buffer* __m_next;
+	
+	static Buffer* Allocate();
+	static void Fre(Buffer* buffer);
+};
 
 #endif
 
