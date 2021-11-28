@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef REFERENCE_HPP
-#define REFERENCE_HPP
+#ifndef DORPC_REFERENCE_HPP
+#define DORPC_REFERENCE_HPP
 
 #include <cinttypes>
 

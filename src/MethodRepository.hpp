@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef METHOD_REPOSITORY_HPP
-#define METHOD_REPOSITORY_HPP
+#ifndef DORPC_METHOD_REPOSITORY_HPP
+#define DORPC_METHOD_REPOSITORY_HPP
 
 #include <cinttypes>
 #include <unordered_map>
@@ -98,7 +98,7 @@ private:
 
 #include "MethodRepository.inl.hpp"
 
-#define ADD_METHOD(TYPE, METHOD) \
+#define REGISTER_METHOD(TYPE, METHOD) \
 	( \
 		GeneralMethodRepository::Singleton() \
 			->Add<TYPE, decltype(TYPE::METHOD)> \

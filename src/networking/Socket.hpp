@@ -18,28 +18,26 @@
 
 #pragma once
 
-#ifndef DORPC_REFERENCE_INL_HPP
-#define DORPC_REFERENCE_INL_HPP
+#ifndef DORPC_NETWORKING_SOCKET_HPP
+#define DORPC_NETWORKING_SOCKET_HPP
 
-#include "Reference.hpp"
-#include "Cluster.hpp"
+#include <cinttypes>
 
-namespace impl {
-	template<class T, typename Ret, typename... Args>
-	struct Call {
-		Reference<T> ref;
-		Ret (T::*method)(Args...);
-		inline void Do(Args... args) {
-			Cluster::Singleton()->Call<T, Ret, Args...>(ref, method, args...);
-		}
-	};
-
-	template<class T, typename Ret, typename... Args>
-	inline Call<T, Ret, Args...> MakeCall(Reference<T> ref,
-			Ret (T::*method)(Args...)) {
-		return Call<T, Ret, Args...>{ref, method};
-	}
-}
+struct Socket {
+	struct us_socket_t* socket;
+	
+	
+	
+	
+	
+	
+	void OnOpen(char* ip, int ipLength);
+	void OnData(uint8_t* data, int length);
+	void OnEnd();
+	void OnClose(int code, void* reason);
+	void OnTimeout();
+	void OnWritable();
+};
 
 #endif
 

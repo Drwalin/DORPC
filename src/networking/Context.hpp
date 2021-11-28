@@ -18,28 +18,28 @@
 
 #pragma once
 
-#ifndef DORPC_REFERENCE_INL_HPP
-#define DORPC_REFERENCE_INL_HPP
+#ifndef DORPC_NETWORKING_CONTEXT_HPP
+#define DORPC_NETWORKING_CONTEXT_HPP
 
-#include "Reference.hpp"
-#include "Cluster.hpp"
-
-namespace impl {
-	template<class T, typename Ret, typename... Args>
-	struct Call {
-		Reference<T> ref;
-		Ret (T::*method)(Args...);
-		inline void Do(Args... args) {
-			Cluster::Singleton()->Call<T, Ret, Args...>(ref, method, args...);
-		}
-	};
-
-	template<class T, typename Ret, typename... Args>
-	inline Call<T, Ret, Args...> MakeCall(Reference<T> ref,
-			Ret (T::*method)(Args...)) {
-		return Call<T, Ret, Args...>{ref, method};
-	}
-}
+struct Context {
+	struct us_context_t* context;
+	struct Loop* loop;
+	
+	
+	void Init(struct us_context_t* context);
+	void Deinit();
+	
+	
+	static void InternalOnOpen(struct us_socket_t* socket, int isClient,
+			char* ip, int ipLength);
+	static void InternalOnData(struct us_socket_t* socket, char* data,
+			int length);
+	static void InternalOnEnd(struct us_socket_t* socket);
+	static void InternalOnClose(struct us_socket_t* socket, int code,
+			void* reason);
+	static void InternalOnTimeout(struct us_socket_t* socket);
+	static void InternalOnWritable(struct us_socket_t* socket);
+};
 
 #endif
 

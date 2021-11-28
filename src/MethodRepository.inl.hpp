@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef METHOD_REPOSITORY_INL_HPP
-#define METHOD_REPOSITORY_INL_HPP
+#ifndef DORPC_METHOD_REPOSITORY_INL_HPP
+#define DORPC_METHOD_REPOSITORY_INL_HPP
 
 #include <cinttypes>
 

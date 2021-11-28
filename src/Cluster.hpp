@@ -18,8 +18,8 @@
 
 #pragma once
 
-#ifndef CLUSTER_HPP
-#define CLUSTER_HPP
+#ifndef DORPC_CLUSTER_HPP
+#define DORPC_CLUSTER_HPP
 
 #include <cinttypes>
 #include <string>
@@ -47,6 +47,7 @@ public:
 	bool ConnectToClusterSSL(const std::string& ip, int port);
 	bool ConnectToClusterTCP(const std::string& ip, int port);
 	
+	
 	template<class T, typename Ret, typename... Args>
 	void Call(Reference<T> ref, Ret (T::*method)(Args...), Args... args);
 	
@@ -58,8 +59,6 @@ private:
 	std::string certKey;
 	std::string certFile;
 	std::string certRootCA;
-	
-	
 };
 
 #endif
