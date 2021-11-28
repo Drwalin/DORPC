@@ -26,9 +26,7 @@ LIBS += -lpthread -lssl -lcrypto
 
 INCLUDE = -I./src/
 CXXFLAGS += $(INCLUDE)
-OBJECTS =bin/asio.o bin/socket.o bin/acceptor.o
-OBJECTS+=bin/tcp_socket_impl.o bin/tcp_acceptor_impl.o
-OBJECTS+=bin/ssl_socket_impl.o bin/ssl_acceptor_impl.o
+OBJECTS = bin/MethodRepository.o bin/Cluster.o
 
 all: $(LIBFILE)
 
