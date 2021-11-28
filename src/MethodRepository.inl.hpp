@@ -35,19 +35,19 @@ inline void GeneralMethodRepository::Add(MethodType method,
 	(new Method(method, id, name))->Add();
 }
 
-template<typename T, typename Ret, typename... Args>
-Method<T, Ret, Args...>::~Method() {
+template<typename T, typename... Args>
+Method<T, Args...>::~Method() {
 	MethodRepository<T>::Singleton()->Clear();
 }
 
-template<typename T, typename Ret, typename... Args>
-void Method<T, Ret, Args...>::Add() {
+template<typename T, typename... Args>
+void Method<T, Args...>::Add() {
 	GeneralMethodRepository::Singleton()->Add<T>(this);
 	MethodRepository<T>::Singleton()->Add(this);
 }
 
-template<typename T, typename Ret, typename... Args>
-void Method<T, Ret, Args...>::Update() {
+template<typename T, typename... Args>
+void Method<T, Args...>::Update() {
 	GeneralMethodRepository::Singleton()->Update(this);
 	MethodRepository<T>::Singleton()->Update(this);
 }

@@ -37,15 +37,15 @@ namespace impl {
 	}
 }
 
-template<typename T, typename Ret, typename... Args>
+template<typename T, typename... Args>
 class Method : public MethodBase {
 public:
 	
 	virtual ~Method() override;
 	
-	using Type = Ret(T::*)(Args...);
+	using Type = void(T::*)(Args...);
 	
-	Method(Ret (T::*method)(Args...), uint64_t id, const std::string& name) :
+	Method(void(T::*method)(Args...), uint64_t id, const std::string& name) :
 			MethodBase(method, id, name) {}
 	
 	
@@ -54,15 +54,13 @@ public:
 	
 	inline Type GetMethod() const {return (Type)methodPtr;}
 
-	virtual bool Execute(void* objectPtr, class Return& returnValue,
-			void* argsData, uint32_t argsSize) const override {
+	virtual bool Execute(void* objectPtr, void* argsData,
+			uint32_t argsSize) const override {
 		std::tuple<Args...> arguments;
 		if(Unpack(arguments, argsData, argsSize) == false)
 			return false;
 		try {
-			returnValue.Set(
-					impl::InvokeMethod((T*)objectPtr, GetMethod(), arguments)
-					);
+			impl::InvokeMethod((T*)objectPtr, GetMethod(), arguments);
 		} catch (...) {
 			return false;
 		}

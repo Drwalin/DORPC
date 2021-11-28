@@ -24,10 +24,11 @@
 struct Context {
 	struct us_context_t* context;
 	struct Loop* loop;
+	int ssl;
 	
 	
-	void Init(struct us_context_t* context);
-	void Deinit();
+	void Init(struct us_context_t* context, int ssl);
+	void Destroy();
 	
 	
 	static void InternalOnOpen(struct us_socket_t* socket, int isClient,
@@ -39,6 +40,8 @@ struct Context {
 			void* reason);
 	static void InternalOnTimeout(struct us_socket_t* socket);
 	static void InternalOnWritable(struct us_socket_t* socket);
+	
+	static Context* Make();
 };
 
 #endif

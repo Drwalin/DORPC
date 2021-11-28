@@ -25,15 +25,13 @@
 #include <cinttypes>
 #include <string>
 
-#include "Return.hpp"
-
 class MethodBase {
 public:
 	
 	virtual ~MethodBase() = default;
 	
-	virtual bool Execute(void* objectPtr, class Return& returnValue,
-			void* args, uint32_t argsSize) const = 0;
+	virtual bool Execute(void* objectPtr, void* args,
+			uint32_t argsSize) const = 0;
 	
 	inline void* GetPtr() const { return methodPtr; }
 	inline uint64_t GetId() const { return id; }
@@ -54,7 +52,7 @@ protected:
 	std::string name;
 };
 
-template<typename T, typename Ret, typename... Args>
+template<typename T, typename... Args>
 class Method;
 
 #include "Method.inl.hpp"

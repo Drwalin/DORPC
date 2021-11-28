@@ -30,7 +30,7 @@ OBJECTS = bin/MethodRepository.o bin/Cluster.o
 
 all: $(LIBFILE)
 
-$(LIBFILE): $(OBJECTS) uSockets/uSockets.a msgpack-c/msgpackc.a
+$(LIBFILE): $(OBJECTS) uSockets/uSockets.a msgpack-c/libmsgpackc.a
 	$(AR) rvs $@ $^
 
 # uSockets:
@@ -40,15 +40,8 @@ uSockets/uSockets.a:
 
 # msgpack-c:
 
-MSGPACK_FILES = msgpack-c/src/object.o msgpack-c/src/unpack.o
-MSGPACK_FILES += msgpack-c/src/version.o msgpack-c/src/vrefbuffer.o
-MSGPACK_FILES += msgpack-c/src/zoneo.o
-
-msgpack-c/msgpackc.a: $(MSGPACK_FILES)
-	$(AR) rvs $@ $^
-
-msgpack-c/src/%.o: msgpack-c/src/%.c
-	$(CXX) -c -o $@ $< $(CXXFLAGS)
+msgpack-c/libmsgpackc.a: msgpack-c/include/msgpack/sysdep.h $(MSGPACK_FILES)
+	(cd msgpack-c ; cmake . ; make)
 
 # objects:
 bin/%.o: src/%.cpp src/%.hpp

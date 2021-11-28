@@ -25,10 +25,13 @@
 
 struct Socket {
 	struct us_socket_t* socket;
+	struct Context* context;
+	struct Loop* loop;
+	int ssl;
 	
 	
-	
-	
+	void Init(struct us_socket_t* socket);
+	void Destroy();
 	
 	
 	void OnOpen(char* ip, int ipLength);
@@ -37,6 +40,8 @@ struct Socket {
 	void OnClose(int code, void* reason);
 	void OnTimeout();
 	void OnWritable();
+	
+	static Socket* Make();
 };
 
 #endif
