@@ -1,0 +1,12 @@
+[submodule "uSockets"]
+	path = uSockets
+	url = https://github.com/uNetworking/uSockets.git
+[submodule "MakefileSTD"]
+	path = MakefileSTD
+	url = https://github.com/Drwalin/MakefileSTD.git
+[submodule "msgpack-c"]
+	path = msgpack-c
+	url = https://github.com/msgpack/msgpack-c.git
+[submodule "Concurrent"]
+	path = Concurrent
+	url = https://github.com/Drwalin/Concurrent.git
