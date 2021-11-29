@@ -5,7 +5,7 @@ AR = ar
 CXX = g++
 CXXFLAGS = -flto -pipe -std=c++20 -pedantic -Wall -IuSockets/src
 LIBS=
-LIBFILE=libicon4.a
+LIBFILE=libdorpc.a
 
 ifeq ($(DEBUG),1)
 	CXXFLAGS += -ggdb -g -pg
@@ -24,9 +24,11 @@ else
 endif
 LIBS += -lpthread -lssl -lcrypto
 
-INCLUDE = -I./src/
+INCLUDE = -I./src/ -I./Concurrent -I./uSockets/include -I./msgpack-c/include
 CXXFLAGS += $(INCLUDE)
 OBJECTS = bin/MethodRepository.o bin/Cluster.o
+OBJECTS += bin/networking/Buffer.o bin/networking/Socket.o
+OBJECTS += bin/networking/Context.o bin/networking/Loop.o
 
 all: $(LIBFILE)
 

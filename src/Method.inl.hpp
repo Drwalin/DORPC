@@ -21,6 +21,9 @@
 #ifndef DORPC_METHOD_INL_HPP
 #define DORPC_METHOD_INL_HPP
 
+#include <tuple>
+
+#include "Util.hpp"
 #include "Method.hpp"
 
 namespace impl {
@@ -54,10 +57,9 @@ public:
 	
 	inline Type GetMethod() const {return (Type)methodPtr;}
 
-	virtual bool Execute(void* objectPtr, void* argsData,
-			uint32_t argsSize) const override {
+	virtual bool Execute(void* objectPtr, Buffer* buffer) const override {
 		std::tuple<Args...> arguments;
-		if(Unpack(arguments, argsData, argsSize) == false)
+		if(Util::Unpack(arguments, buffer) == false)
 			return false;
 		try {
 			impl::InvokeMethod((T*)objectPtr, GetMethod(), arguments);

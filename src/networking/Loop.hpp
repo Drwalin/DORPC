@@ -23,10 +23,8 @@
 
 #include "networking/Event.hpp"
 
-namespace std {
-	class mutex;
-	template<typename T> class vector;
-}
+#include <mutex>
+#include <vector>
 
 struct Loop {
 	struct us_loop_t* loop;
@@ -39,7 +37,6 @@ struct Loop {
 	void Init(struct us_loop_t* loop);
 	void Deinit();
 	void Destroy();
-	
 	
 	void Run();
 	
