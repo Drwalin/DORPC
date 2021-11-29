@@ -27,13 +27,18 @@
 #include <unordered_set>
 #include <vector>
 
-#include "Reference.hpp"
+#ifndef DORPC_REFERENCE_HPP
+template<typename T>
+class Reference;
+#endif
 
 struct Cluster {
 public:
 	
 	Cluster();
 	~Cluster();
+	
+	static Cluster* Singleton();
 	
 	
 	void ConfigureCertificate(const std::string& certKey,
@@ -52,8 +57,10 @@ public:
 	template<class T, typename... Args>
 	inline void Call(Reference<T> ref, void(T::*method)(Args...), Args... args);
 	
+	void Execute(struct Socket* socket, struct Buffer* buffer);
 	
-	static Cluster* Singleton();
+	
+	void Run();
 	
 private:
 
@@ -68,22 +75,52 @@ private:
 	std::string certRootCA;
 	
 	struct Loop* loop;
-	std::vector<struct Context*> contexts;
-	std::unordered_set<struct Socket*> sockets;
+	std::vector<struct Context*> sslContexts, tcpSockets;
+	std::vector<struct Socket*> sockets;
 	
 	std::unordered_map<uint64_t, void*> localObjects;
-	std::unordered_map<uint64_t, Socket*> remoteObjects; 
+	std::unordered_map<uint64_t, Socket*> remoteObjectSocket; 
 };
 
 
 
+#include "Util.hpp"
+
 template<class T, typename... Args>
 inline void Cluster::Call(Reference<T> ref,
 		void(T::*method)(Args...), Args... args) {
-	if(IsLocal(ref.Get())) {
-		
+	auto local = localObjects.find(ref.Get());
+	if(local != localObjects.end()) {
+		(((T*)(local->second))->method)(args...);
 	} else {
-
+		auto remote = remoteObjectSocket.find(ref.Get());
+		if(remote != remoteObjectSocket.end()) {
+			
+			
+			
+			// TODO: verify
+			// Perform an RPC call:
+			Buffer* buffer = Buffer::Allocate();
+			Util::MakeRPCHeader(ref, buffer);
+			Util::Pack(buffer, args...);
+			remote->second.Send(buffer);
+			
+		} else {
+			
+			// TODO: Find object reference and call RPC on it
+			// 
+			// few possibile sollutions:
+			//      - wonderer that looks for object reference and
+			//          calls RPC on it
+			//      - send multiple wonderers that search for
+			//          object reference and defer RPC
+			//          
+			// few possible improvements:
+			//      - when allocating new object send it's info to
+			//          few random nodes to improve searching
+			// 
+			
+		}
 	}
 }
 

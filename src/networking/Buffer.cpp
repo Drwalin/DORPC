@@ -16,42 +16,35 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <cinttypes>
+#include "Buffer.hpp"
 
-#include "MethodRepository.hpp"
+#include <msgpack.h>
 
-void NameRepository::Destroy() {
-	for(auto& it : methodIdPtr) {
-		delete it.second;
-	}
-	methodNameId.clear();
-	methodIdPtr.clear();
-	methodPtrId.clear();
+#include <mpmc_pool.hpp>
+
+namespace impl {
+	concurrent::mpmc::pool<Buffer> bufferPool;
 }
 
-void NameRepository::Clear() {
-	methodNameId.clear();
-	methodIdPtr.clear();
-	methodPtrId.clear();
+Buffer::Buffer() {
+	buffer.size = 0;
+	buffer.data = NULL;
+	buffer.alloc = 0;
 }
 
-void NameRepository::Add(MethodBase* method) {
-	methodNameId[method->GetName()] = method->GetId();
-	methodIdPtr[method->GetId()] = method;
-	methodPtrId[method->GetPtr()] = method->GetId();
+Buffer::~Buffer() {
+	msgpack_sbuffer_destroy(&buffer);
+	buffer.size = 0;
+	buffer.data = NULL;
+	buffer.alloc = 0;
 }
 
-void NameRepository::Update(MethodBase* method) {
-	uint64_t oldId = methodNameId[method->GetName()];
-	if(methodIdPtr[oldId] == method) {
-		methodIdPtr.erase(oldId);
-	}
-	Add(method);
+Buffer* Buffer::Allocate() {
+	return impl::bufferPool.acquire();
 }
 
-
-
-GeneralMethodRepository::~GeneralMethodRepository() {
-	repository.Destroy();
+void Buffer::Free(Buffer* buffer) {
+	if(buffer)
+		impl::bufferPool.release(buffer);
 }
 

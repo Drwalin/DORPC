@@ -40,8 +40,8 @@ public:
 	void Add(MethodBase* method);
 	void Update(MethodBase* method);
 	
-	MethodBase* Find(uint64_t id) const;
-	uint64_t Find(void* ptr);
+	inline MethodBase* Find(uint64_t id) const;
+	inline uint64_t Find(void* ptr) const;
 	
 private:
 	
@@ -58,6 +58,9 @@ public:
 	template<typename T, typename MethodType>
 	inline void Add(MethodType method, const std::string& name);
 	inline void Update(MethodBase* method) { repository.Update(method); }
+	
+	inline MethodBase* Find(uint64_t id) const;
+	inline uint64_t Find(void* ptr) const;
 	
 	inline static GeneralMethodRepository* Singleton() {
 		static GeneralMethodRepository singleton;
@@ -83,6 +86,9 @@ public:
 	inline void Add(MethodBase* method) { repository.Add(method); }
 	inline void Update(MethodBase* method) { repository.Update(method); }
 	inline void Clear() { repository.Clear(); }
+	
+	inline MethodBase* Find(uint64_t id) const;
+	inline uint64_t Find(void* ptr) const;
 	
 	inline static MethodRepository<T>* Singleton() {
 		static MethodRepository<T> singleton;

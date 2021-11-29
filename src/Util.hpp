@@ -18,45 +18,51 @@
 
 #pragma once
 
-#ifndef DORPC_METHOD_HPP
-#define DORPC_METHOD_HPP
+#ifndef DORPC_UTIL_HPP
+#define DORPC_UTIL_HPP
 
-#include <functional>
-#include <cinttypes>
-#include <string>
-
+#include <msgpack.h>
 #include "networking/Buffer.hpp"
 
-class MethodBase {
-public:
-	
-	virtual ~MethodBase() = default;
-	
-	virtual bool Execute(void* objectPtr, Buffer* buffer) const = 0;
-	
-	inline void* GetPtr() const { return methodPtr; }
-	inline uint64_t GetId() const { return id; }
-	inline const std::string& GetName() const { return name; }
-	
-	virtual void Add() = 0;
-	virtual void Update() = 0;
-	
-protected:
-	
-	MethodBase(void* ptr, uint64_t id, const std::string& name) :
-		methodPtr(ptr), id(id), name(name) {}
-	
-protected:
-	
-	void* methodPtr;
-	uint64_t id;
-	std::string name;
-};
+#include <tuple>
 
-template<typename T, typename... Args>
-class Method;
+namespace Util {
+	namespace PackFor {
+		template<typename... Args>
+		inline void Foreach(Buffer* buffer, Args... args);
+		
+		template<typename T, typename... Args>
+		inline void Foreach(Buffer* buffer, T object, Args... args) {
+			buffer->PackAdd(object);
+			Foreach(args...);
+		}
+		
+		template<>
+		inline void Foreach(Buffer* buffer) {}
+	}
+	
+	template<class T, typename... Args>
+	inline void Pack(Buffer* buffer, Args... args) {
+		const int elements_count = sizeof...(args);
+		PackFor::Foreach(buffer, args...);
+	}
 
-#include "Method.inl.hpp"
+	
+	
+	template<class T, typename... Args>
+	inline bool Unpack(std::tuple<Args...>& args, Buffer* buffer) {
+		
+		// TODO
+		
+		return false;
+	}
+	
+	
+	
+	inline void MakeRPCHeader(Buffer* buffer) {
+		// TODO
+	}
+}
 
 #endif
 

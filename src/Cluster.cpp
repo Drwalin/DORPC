@@ -18,12 +18,20 @@
 
 #include <cinttypes>
 
+#include "networking/Loop.hpp"
+#include "networking/Context.hpp"
+#include "networking/Socket.hpp"
+#include "networking/Buffer.hpp"
+#include "networking/Event.hpp"
+
 #include "Cluster.hpp"
 
 Cluster::Cluster() {
+	loop = Loop::Make();
 }
 
 Cluster::~Cluster() {
+	loop->Destroy();
 }
 
 Cluster* Cluster::Singleton() {
@@ -31,6 +39,23 @@ Cluster* Cluster::Singleton() {
 	return &cluster;
 }
 
+
+void Cluster::ConfigureCertificate(const std::string& certKey,
+		const std::string& certFile, const std::string& certRootCA) {
+	this->certKey = certKey;
+	this->certFile = certFile;
+	this->certRootCA = certRootCA;
+}
+
+
+
+void Cluster::Execute(Socket* socket, Buffer* buffer) {
+
+}
+
+void Cluster::Run() {
+	loop->Run();
+}
 
 
 

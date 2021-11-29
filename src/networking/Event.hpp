@@ -21,20 +21,26 @@
 #ifndef DORPC_NETWORKING_EVENT_HPP
 #define DORPC_NETWORKING_EVENT_HPP
 
+#include "Buffer.hpp"
+
 struct Event {
+	
 	enum Type {
+		NONE,
 		SEND,
-		CLOSE,
-		RECONNEC
+		CLOSE_SOCKET,
+		CLOSE_CONTEXT,
+		RECONNECT
 	};
 	
 	Type type;
 	union {
-		struct msgpack_sbuffer* buffer;
-		struct msgpack_sbuffer* ip;
+		Buffer* buffer;
+		Buffer* ip;
 	};
 	union {
 		struct Socket* socket;
+		struct Context* context;
 		int port;
 	};
 };

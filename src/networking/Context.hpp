@@ -31,7 +31,9 @@ struct Context {
 	void Destroy();
 	
 	
-	static void InternalOnOpen(struct us_socket_t* socket, int isClient,
+	static void InternalOnOpenTcp(struct us_socket_t* socket, int isClient,
+			char* ip, int ipLength);
+	static void InternalOnOpenSsl(struct us_socket_t* socket, int isClient,
 			char* ip, int ipLength);
 	static void InternalOnData(struct us_socket_t* socket, char* data,
 			int length);
