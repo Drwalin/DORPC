@@ -32,7 +32,11 @@ template<typename T>
 class Reference;
 #endif
 
-struct Cluster {
+#ifndef DORPC_META_CLUSTER_HPP
+class MetaCluster;
+#endif
+
+class Cluster {
 public:
 	
 	Cluster();
@@ -56,6 +60,8 @@ public:
 	
 	template<class T, typename... Args>
 	inline void Call(Reference<T> ref, void(T::*method)(Args...), Args... args);
+	template<typename... Args>
+	inline void Call(void(*function)(Args...), Args... args);
 	
 	void Execute(struct Socket* socket, struct Buffer* buffer);
 	
@@ -75,11 +81,13 @@ private:
 	std::string certRootCA;
 	
 	struct Loop* loop;
-	std::vector<struct Context*> sslContexts, tcpSockets;
+	std::vector<struct Context*> sslContexts, tcpContexts;
 	std::vector<struct Socket*> sockets;
 	
 	std::unordered_map<uint64_t, void*> localObjects;
 	std::unordered_map<uint64_t, Socket*> remoteObjectSocket; 
+	
+	std::unordered_map<uint64_t, MetaCluster*> pointerRangeToClusterMetadata;
 };
 
 

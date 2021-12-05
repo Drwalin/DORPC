@@ -18,49 +18,40 @@
 
 #pragma once
 
-#ifndef DORPC_METHOD_HPP
-#define DORPC_METHOD_HPP
+#ifndef DORPC_META_CLUSTER_HPP
+#define DORPC_META_CLUSTER_HPP
 
-#include <functional>
 #include <cinttypes>
 #include <string>
+#include <unordered_map>
+#include <unordered_set>
+#include <vector>
 
-#include "networking/Buffer.hpp"
-
-class MethodBase {
+class MetaCluster {
 public:
 	
-	virtual ~MethodBase() = default;
+	MetaCluster();
+	~MetaCluster();
 	
-	// objectPtr is ignored when this is StaticFunction
-	virtual bool Execute(void* objectPtr, Buffer* buffer) const = 0;
+	void SetId(uint64_t id);
+	void SetEndpoint(const std::string& ip, int port);
 	
-	inline void* GetPtr() const { return methodPtr; }
-	inline uint64_t GetId() const { return id; }
-	inline const std::string& GetName() const { return name; }
+	void RegisterPointerRange(uint64_t begin);
+	void SetSocket(struct Socket* socket);
 	
-	virtual void Add() = 0;
-	virtual void Update() = 0;
 	
-protected:
 	
-	MethodBase(void* ptr, uint64_t id, const std::string& name) :
-		methodPtr(ptr), id(id), name(name) {}
 	
-protected:
+private:
 	
-	void* methodPtr;
 	uint64_t id;
-	std::string name;
+	std::unordered_set<uint64_t> pointersRangeBegin;
+	
+	std::string ip;
+	int port;
+	
+	struct Socket* socket;
 };
-
-template<typename T, typename... Args>
-class Method;
-
-template<typename... Args>
-class StaticFunction;
-
-#include "Method.inl.hpp"
 
 #endif
 
