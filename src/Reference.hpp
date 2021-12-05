@@ -48,9 +48,13 @@ private:
 
 #include "Reference.inl.hpp"
 
-#define RPC(OBJECT_REF, METHOD, ...) \
-		(impl::MakeCall(OBJECT_REF, \
+#define RMI(OBJECT_REF, METHOD, ...) \
+		(impl::MakeInvoke(OBJECT_REF, \
 			decltype(OBJECT_REF)::Type::METHOD) \
+			.Do(__VA_ARGS__))
+
+#define RPC(METHOD, ...) \
+		(impl::MakeCall(METHOD) \
 			.Do(__VA_ARGS__))
 
 #endif

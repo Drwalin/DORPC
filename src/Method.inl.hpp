@@ -38,6 +38,18 @@ namespace impl {
 		static constexpr auto size = std::tuple_size<Tuple>::value;
 		return InvokeMethod(object, f, t, std::make_index_sequence<size>{});
 	}
+	
+	template<typename Function, typename Tuple, size_t ... I>
+	inline auto InvokeFunction(Function f, Tuple& t,
+			std::index_sequence<I ...>) {
+		 return f(std::get<I>(t) ...);
+	}
+
+	template<typename Function, typename Tuple>
+	inline auto InvokeFunction(Function f, Tuple& t) {
+		static constexpr auto size = std::tuple_size<Tuple>::value;
+		return InvokeFunction(f, t, std::make_index_sequence<size>{});
+	}
 }
 
 template<typename T, typename... Args>
@@ -63,6 +75,36 @@ public:
 			return false;
 		try {
 			impl::InvokeMethod((T*)objectPtr, GetMethod(), arguments);
+		} catch (...) {
+			return false;
+		}
+		return true;
+	}
+};
+
+template<typename... Args>
+class StaticFunction : public MethodBase {
+public:
+	
+	virtual ~StaticFunction() override;
+	
+	using Type = void(*)(Args...);
+	
+	StaticFunction(void(*function)(Args...), uint64_t id, const std::string& name) :
+			MethodBase(function, id, name) {}
+	
+	
+	virtual void Add() override;
+	virtual void Update() override;
+	
+	inline Type GetFunction() const {return (Type)methodPtr;}
+
+	virtual bool Execute(void* objectPtr, Buffer* buffer) const override {
+		std::tuple<Args...> arguments;
+		if(Util::Unpack(arguments, buffer) == false)
+			return false;
+		try {
+			impl::InvokeMethod(GetFunction(), arguments);
 		} catch (...) {
 			return false;
 		}

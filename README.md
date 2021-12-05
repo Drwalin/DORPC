@@ -94,7 +94,7 @@ struct ObjectReference {
 };
 
 map<Pointer, ObjectReference> localObjects;
-map<Pointer, Cluster*> mappingPointerRangesToClusters;
+map<PointersRange, Cluster*> mappingPointerRangesToClusters;
 ```
 
 localObjects object should be made as an array, or array of arrays for

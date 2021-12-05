@@ -41,34 +41,22 @@ inline uint64_t NameRepository::Find(void* ptr) const {
 
 
 
-inline MethodBase* GeneralMethodRepository::Find(uint64_t id) const {
-	return repository.Find(id);
-}
-
-inline uint64_t GeneralMethodRepository::Find(void* method) const {
-	return repository.Find(method);
-}
-
 template<typename T, typename MethodType>
 inline void GeneralMethodRepository::Add(MethodType method,
 		const std::string& name) {
-	
 	++functionIdCounter;
 	uint64_t id = functionIdCounter;
 	
 	(new Method(method, id, name))->Add();
 }
 
-
-
-template<typename T>
-inline MethodBase* MethodRepository<T>::Find(uint64_t id) const {
-	return repository.Find(id);
-}
-
-template<typename T>
-inline uint64_t MethodRepository<T>::Find(void* method) const {
-	return repository.Find(method);
+template<typename MethodType>
+inline void GeneralMethodRepository::AddFunction(MethodType method,
+		const std::string& name) {
+	++functionIdCounter;
+	uint64_t id = functionIdCounter;
+	
+	(new StaticFunction(method, id, name))->Add();
 }
 
 
@@ -89,7 +77,6 @@ void Method<T, Args...>::Update() {
 	GeneralMethodRepository::Singleton()->Update(this);
 	MethodRepository<T>::Singleton()->Update(this);
 }
-
 
 #endif
 

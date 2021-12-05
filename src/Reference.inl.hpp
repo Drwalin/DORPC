@@ -26,7 +26,7 @@
 
 namespace impl {
 	template<class T, typename... Args>
-	struct Call {
+	struct Invoke {
 		Reference<T> ref;
 		void(T::*method)(Args...);
 		inline void Do(Args... args) {
@@ -35,9 +35,23 @@ namespace impl {
 	};
 
 	template<class T, typename... Args>
-	inline Call<T, Args...> MakeCall(Reference<T> ref,
+	inline Invoke<T, Args...> MakeInvoke(Reference<T> ref,
 			void(T::*method)(Args...)) {
-		return Call<T, Args...>{ref, method};
+		return Invoke<T, Args...>{ref, method};
+	}
+	
+	
+	template<typename... Args>
+	struct Call {
+		void(*function)(Args...);
+		inline void Do(Args... args) {
+			Cluster::Singleton()->Call<Args...>(function, args...);
+		}
+	};
+
+	template<typename... Args>
+	inline Call<Args...> MakeCall(void(*function)(Args...)) {
+		return Call<Args...>{function};
 	}
 }
 
