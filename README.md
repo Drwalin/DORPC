@@ -20,10 +20,10 @@ references from old object to new object.
 
 #### Memory usage:
 ```cpp
-array<Cluster*> clusters;
+array<Node*> nodes;
 
 map<Pointer, Object*> localObjects;
-map<PointersRange, Cluster*> mappingPointerRangesToClusters;
+map<PointersRange, Node*> mappingPointerRangesToNodes;
 ```
 
 localObjects object should be made as an array, or array of arrays for
@@ -43,7 +43,7 @@ sending request to a node that does not have an object but has metadata to it,
 then that Node forwads received request.
 
 To find an object it is requeired to send a multicast message that circulates
-through cluster and looks for an object.
+through Node and looks for an object.
 
 #### Pros:
 - free movement of objects between Nodes
@@ -55,10 +55,10 @@ an object.
 
 #### Memory usage:
 ```cpp
-array<Cluster*> clusters;
+array<Node*> nodes;
 
 map<Pointer, Object*> localObjects;
-map<Pointer, Cluster*> mappingPointerRangesToClusters;
+map<Pointer, Node*> mappingPointerRangesToNodes;
 ```
 
 
@@ -83,18 +83,18 @@ away without clearing (or long living objects).
 
 #### Memory usage:
 ```cpp
-array<Cluster*> clusters;
+array<Node*> Nodes;
 
 struct ObjectReference {
 	union {
 		Object* itIsLocalObject;
-		Cluster* itIsDelegatedObjectToOtherNode;
+		Node* itIsDelegatedObjectToOtherNode;
 	};
 	bool isDelegated;
 };
 
 map<Pointer, ObjectReference> localObjects;
-map<PointersRange, Cluster*> mappingPointerRangesToClusters;
+map<PointersRange, Node*> mappingPointerRangesToNodes;
 ```
 
 localObjects object should be made as an array, or array of arrays for
@@ -102,5 +102,44 @@ optimization. It is possible because local Pointers should be have continous
 values.
 
 PointersRange can cover milions or bilions of pointers.
+
+
+
+
+
+
+
+
+
+
+
+
+## Application structure
+
+#### Solution 1:
+
+ Layer | Module | Mechanisms
+-------|--------|------------
+1 | Basic networking (passing messages - byte arrays of given data size) | TCP(TLS) / UDP(DTLS)
+2 | Network mesh grid with routing to indirectly connected nodes | sending messages to nodes by NodeID
+3 | RPC/RMI | Based on data serialisation (with correct type assumption for optimisation)
+
+
+
+
+#### Solution 2:
+
+ Layer | Module | Mechanisms
+-------|--------|------------
+1 | Basic networking (passing messages - byte arrays of given data size) | TCP(TLS) / UDP(DTLS)
+2 | serialization |
+3 | Routing ; automatic establishing/selecting leader | leader provides nodes with theirs id's ; some uniform data
+4 | RPC (by NodeID)
+5 | Finding location of distributed objects
+6 | objects management | allocating ; transfering between nodes ; freeing ; storing in database (?)
+7 | RMI (by object uniform pointer/URI/UUID/SnowflakeID))
+
+
+
 
 

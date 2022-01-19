@@ -130,18 +130,18 @@ private:
 
 #include "MethodRepository.inl.hpp"
 
-#define REGISTER_METHOD(TYPE, METHOD) \
+#define REGISTER_METHOD(CLASS, METHOD) \
 	( \
 		GeneralMethodRepository::Singleton() \
-			->Add<TYPE, decltype(TYPE::METHOD)> \
-			(TYPE::&METHOD, TYPE##"::"##METHOD) \
+			->Add<CLASS, decltype(CLASS::METHOD)> \
+			(CLASS::&METHOD, CLASS##"::"##METHOD) \
 	)
 
-#define REGISTER_STATIC_FUNCTION(TYPE, METHOD) \
+#define REGISTER_STATIC_FUNCTION(CLASS, METHOD) \
 	( \
 		GeneralMethodRepository::Singleton() \
-			->Add<TYPE, decltype(TYPE::METHOD)> \
-			(TYPE::&METHOD, TYPE##"::"##METHOD) \
+			->Add<CLASS, decltype(CLASS::METHOD)> \
+			(CLASS::&METHOD, CLASS##"::"##METHOD) \
 	)
 
 #endif
