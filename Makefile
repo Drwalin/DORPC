@@ -3,14 +3,14 @@ include MakefileSTD/MakefileSTD
 
 AR = ar
 CXX = g++
-CXXFLAGS = -flto -pipe -std=c++20 -pedantic -Wall -IuSockets/src
+CXXFLAGS = -flto -pipe -std=c++2a -pedantic -Wall -IuSockets/src -lpthread
 LIBS=
 LIBFILE=libdorpc.a
 
 ifeq ($(DEBUG),1)
 	CXXFLAGS += -ggdb -g -pg
 else
-	CXXFLAGS += -Ofast -s
+	CXXFLAGS += -O4 -s
 endif
 
 ifeq ($(platform),win)
@@ -24,33 +24,46 @@ else
 endif
 LIBS += -lpthread -lssl -lcrypto
 
-INCLUDE = -I./src/ -I./Concurrent -I./uSockets/include -I./msgpack-c/include
+INCLUDE = -I./src/ -I./Concurrent -I./uSockets/include
 CXXFLAGS += $(INCLUDE)
-OBJECTS = bin/MethodRepository.o bin/Cluster.o
-OBJECTS += bin/networking/Buffer.o bin/networking/Socket.o
+OBJECTS = bin/networking/Buffer.o bin/networking/Socket.o
 OBJECTS += bin/networking/Context.o bin/networking/Loop.o
+OBJECTS += bin/networking/Event.o
 
-all: $(LIBFILE)
+all: $(LIBFILE) tests
 
-$(LIBFILE): $(OBJECTS) uSockets/uSockets.a msgpack-c/libmsgpackc.a
+$(LIBFILE): $(OBJECTS) uSockets/uSockets.a
 	$(AR) rvs $@ $^
+
+# tests:
+
+TESTS = tests/networking_test.exe
+tests: $(TESTS)
+
+tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a
+	$(CXX) -o $@ $^ $(CXXFLAGS)
+
+run: $(TESTS)
+	@echo ""
+	@echo ""
+	@echo Testing
+	@echo ""
+	tests/networking_test.exe
 
 # uSockets:
 
 uSockets/uSockets.a:
-	make uSockets/Makefile
+	cd uSockets ; make $(MFLAGS)
 
-# msgpack-c:
-
-msgpack-c/libmsgpackc.a: msgpack-c/include/msgpack/sysdep.h $(MSGPACK_FILES)
-	(cd msgpack-c ; cmake . ; make)
 
 # objects:
+bin/networking/%.o: src/networking/%.cpp src/networking/%.hpp
+	$(CXX) -c -o $@ $< $(CXXFLAGS)
 bin/%.o: src/%.cpp src/%.hpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 
 .PHONY: clean
 clean:
 	(cd uSockets ; make clean)
-	$(RM) $(OBJECTS) $(LIBFILE) $(MSGPACK_FILES) msgpack-c/src/msgpac-c.a
+	$(RM) $(OBJECTS) $(LIBFILE) $(TESTS)
 

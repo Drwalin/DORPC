@@ -5,8 +5,11 @@
 
 #include <thread>
 #include <cstring>
+#include <string_view>
 
 const uint16_t ports[2] = {12345, 12346};
+
+std::atomic<int> received_counter = 0;
 
 void process(int portOpen, int portOther, int id) {
 	networking::Loop *loop = networking::Loop::Make();
@@ -21,13 +24,30 @@ void process(int portOpen, int portOther, int id) {
 				socket->Send(buffer);
 			},
 			[=](networking::Buffer& buffer, networking::Socket* socket){
-				printf(" Received (on %i): '%s'\n", portOpen, buffer.Data());
+				std::string_view v((char*)buffer.Data(), buffer.Size()-1);
+				bool valid = v.starts_with("Hello from ")
+						&& v.ends_with(", has been sent");
+				printf(" Received (on %i of size %i) [%c;%c]: '%s': %s\n",
+						portOpen, buffer.Size(), v[0], v[v.size()-1],
+						buffer.Data(), valid?"valid":"ERROR!!!");
+				if(valid == false) {
+					std::this_thread::yield();
+					exit(1);
+				} else {
+					received_counter++;
+					if(received_counter == 4) {
+						printf(" done\n");
+						printf(" no errors: 4/4 ... OK\n");
+						exit(0);
+					}
+				}
 			}, "cert/user.key",
 			"cert/user.crt", "cert/rootca.crt", NULL);
 	
 	context->StartListening("127.0.0.1", portOpen);
-	networking::Socket* socket = context->InternalConnect("127.0.0.1",
+	networking::Socket* socket_ = context->InternalConnect("127.0.0.1",
 			portOther);
+	socket_->userData = NULL;
 	loop->Run();
 }
 
