@@ -21,123 +21,83 @@
 #ifndef DORPC_NETWORKING_BUFFER_HPP
 #define DORPC_NETWORKING_BUFFER_HPP
 
-#include <msgpack.h>
 #include <vector>
-#include <string>
-#include <set>
-#include <unordered_set>
-#include <map>
-#include <unordered_map>
+#include <atomic>
 
 #include <mpmc_pool.hpp>
 
-struct Buffer : public concurrent::node<Buffer> {
-	msgpack_sbuffer buffer;
+struct Buffer {
+	
+	class Vector : public concurrent::node<Vector> {
+	public:
+		std::vector<uint8_t> vector;
+		inline void clear() {vector.clear();}
+		inline int32_t size() {return vector.size();}
+		inline uint8_t& operator[](int32_t id) {return vector[id];}
+		inline void resize(int32_t size) {vector.resize(size);}
+		inline void append(const void* buffer, int32_t bytes) {
+			vector.insert(vector.end(), (const uint8_t*)buffer,
+					(const uint8_t*)buffer+bytes);
+		}
+		inline uint8_t* data() {return vector.data();}
+		
+	};
+	
+	union {
+		std::atomic<Buffer::Vector*> buffer;
+		std::atomic<uint64_t> __atomic;
+	};
 	
 	Buffer(const Buffer&) = delete;
 	Buffer(Buffer&) = delete;
-	Buffer(Buffer&& other) = delete;
+	Buffer(Buffer&& other);
 	Buffer();
 	~Buffer();
 	
-	void Alloc();
-	void Destroy();
-	
 	Buffer& operator=(const Buffer&) = delete;
 	Buffer& operator=(Buffer&) = delete;
-	Buffer& operator=(Buffer&& other) = delete;
+	Buffer& operator=(Buffer&& other);
 	
-	inline void Write(void* data, int size) {
-		msgpack_sbuffer_write(&buffer, (char*)data, size); 
+	inline void Clear() {
+		if(buffer)
+			buffer.load()->clear();
 	}
 	
-	inline void PackAdd(struct msgpack_packer* pk, uint64_t value);
-	inline void PackAdd(struct msgpack_packer* pk, int64_t value);
-	inline void PackAdd(struct msgpack_packer* pk, float value);
-	inline void PackAdd(struct msgpack_packer* pk, double value);
-	inline void PackAdd(struct msgpack_packer* pk, bool value);
-	inline void PackAdd(struct msgpack_packer* pk, const std::string& value);
-	inline void PackAdd(struct msgpack_packer* pk, std::string_view value);
-	template<typename T, template<typename> typename container>
-	inline void PackAdd(struct msgpack_packer* pk,
-			const container<T>& value);
-	template<typename K, typename V,
-		template<typename, typename> typename container>
-	inline void PackAdd(struct msgpack_packer* pk,
-			const container<K, V>& value);
-	template<template<typename> typename container>
-	inline void PackAdd(struct msgpack_packer* pk,
-			const container<uint8_t>& value);
+	inline void Destroy() {
+		Free(buffer);
+	}
 	
-	template<typename T>
-	inline void PackAdd(T value);
+	inline void Assure() {
+		if(buffer == NULL)
+			buffer = Allocate();
+	}
 	
-	inline int Size() const { return buffer.size; }
-	inline void* Data() { return buffer.data; }
+	inline void Write(const void* data, int32_t size) {
+		Assure();
+		buffer.load()->append(data, size);
+	}
 	
-	static Buffer* Allocate();
-	static void Free(Buffer* buffer);
+	inline int32_t Size() const { if(buffer == NULL) return 0; return buffer.load()->size(); }
+	inline uint8_t* Data() { Assure(); return &(buffer.load()->operator[](0)); }
+	inline uint8_t& operator[](int32_t id) {
+		Assure();
+		if(buffer.load()->size() <= id)
+			buffer.load()->resize(buffer.load()->size()+1);
+		return Data()[id];
+	}
+	
+private:
+	
+	static Vector* Allocate();
+	static void Free(Vector* buffer);
 };
 
-
-
-template<typename T>
-inline void Buffer::PackAdd(T value) {
-    msgpack_packer pk;
-    msgpack_packer_init(&pk, &buffer, msgpack_sbuffer_write);
-	PackAdd(&pk, value);
-}
-
-#define PACK_ADD(TYPE, FUNCTION) \
-	inline void Buffer::PackAdd(struct msgpack_packer* pk, TYPE value) { \
-		FUNCTION(pk, value); \
+namespace std {
+	inline void swap(Buffer& a, Buffer& b) {
+		Buffer::Vector* tmp = a.buffer;
+		a.buffer = b.buffer.load();
+		b.buffer = tmp;
 	}
-PACK_ADD(uint64_t, msgpack_pack_uint64);
-PACK_ADD(int64_t, msgpack_pack_int64);
-PACK_ADD(float, msgpack_pack_float);
-PACK_ADD(double, msgpack_pack_double);
-#undef PACK_ADD
-
-inline void Buffer::PackAdd(struct msgpack_packer* pk,
-		const std::string& value) {
-	msgpack_pack_str_with_body(pk, value.c_str(), value.size());
-}
-
-inline void Buffer::PackAdd(struct msgpack_packer* pk,
-		std::string_view value) {
-	msgpack_pack_str_with_body(pk, value.data(), value.size());
-}
-
-inline void Buffer::PackAdd(struct msgpack_packer* pk, bool value) {
-	if(value) msgpack_pack_true(pk);
-	else msgpack_pack_false(pk);
-}
-
-
-template<typename T, template<typename> typename container>
-inline void Buffer::PackAdd(struct msgpack_packer* pk,
-		const container<T>& value) {
-	msgpack_pack_array(pk, value.size());
-	for(const auto& it : value) {
-		PackAdd(pk, it);
-	}
-}
-
-template<typename K, typename V,
-	template<typename, typename> typename container>
-inline void Buffer::PackAdd(struct msgpack_packer* pk,
-		const container<K, V>& value) {
-	msgpack_pack_map(pk, value.size());
-	for(const auto& it : value) {
-		PackAdd(pk, it.first);
-		PackAdd(pk, it.second);
-	}
-}
-
-template<template<typename> typename container>
-inline void Buffer::PackAdd(struct msgpack_packer* pk,
-		const container<uint8_t>& value) {
-	msgpack_pack_bin_with_body(pk, value.data(), value.size());
 }
 
 #endif

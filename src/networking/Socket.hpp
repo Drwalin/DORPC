@@ -22,6 +22,7 @@
 #define DORPC_NETWORKING_SOCKET_HPP
 
 #include <cinttypes>
+#include <functional>
 
 #include "Buffer.hpp"
 
@@ -30,14 +31,22 @@ struct Socket {
 	struct Context* context;
 	struct Loop* loop;
 	int ssl;
+	void* userData;
 	
-	Buffer* buffer;
+	Buffer buffer;
+	int32_t received_bytes_of_size;
+	uint8_t received_size[4];
+	int32_t bytes_to_receive;
+	
+	std::function<void(Buffer&, Socket*)> *onReceiveMessage;
+	
+	
 	
 	void Init(struct us_socket_t* socket, int ssl);
 	void Destroy();
 	
 	
-	void Send(Buffer* sendBuffer);
+	void Send(Buffer& sendBuffer);
 	
 	
 	void OnOpen(char* ip, int ipLength);
@@ -46,6 +55,9 @@ struct Socket {
 	void OnClose(int code, void* reason);
 	void OnTimeout();
 	void OnWritable();
+	
+	void InternalSend(Buffer& buffer);
+	void InternalClose();
 };
 
 #endif

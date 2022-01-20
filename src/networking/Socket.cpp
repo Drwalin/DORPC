@@ -16,14 +16,15 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#include <cinttypes>
+#include <algorithm>
 
-#include <msgpack.h>
+#include <cinttypes>
+#include <cstring>
+
 #include <libusockets.h>
 
 #include "Loop.hpp"
 #include "Context.hpp"
-#include "../Cluster.hpp"
 #include "Event.hpp"
 
 #include "Socket.hpp"
@@ -34,8 +35,6 @@ void Socket::Init(struct us_socket_t* socket, int ssl) {
 	context = (Context*)us_socket_context_ext(ssl,
 			us_socket_context(ssl, socket));
 	loop = context->loop;
-	
-	buffer = NULL;
 }
 
 void Socket::Destroy() {
@@ -43,15 +42,19 @@ void Socket::Destroy() {
 }
 
 void Socket::OnOpen(char* ip, int ipLength) {
-	
+	context->sockets->insert(this);
+	bytes_to_receive = 0;
+	received_bytes_of_size = 0;
 }
 
 void Socket::OnEnd() {
-	
+	buffer.Destroy();
+	context->sockets->erase(this);
 }
 
 void Socket::OnClose(int code, void* reason) {
-	
+	buffer.Destroy();
+	context->sockets->erase(this);
 }
 
 void Socket::OnTimeout() {
@@ -64,43 +67,57 @@ void Socket::OnWritable() {
 
 void Socket::OnData(uint8_t* data, int length) {
 	while(length) {
-		if(buffer == NULL)
-			buffer = Buffer::Allocate();
-		int size = buffer->Size();
-		int request_size = 0;
-
-		while(buffer->Size() < 4) {
-			buffer->Write(data, 1);
-			++data;
-			--length;
-			if(length == 0)
-				return;
-		}
-
-		if(size >= 4) {
-			uint8_t* p = (uint8_t*)buffer->Data();
-			request_size = (int(p[0])) | (int(p[1]) << 8) | (int(p[2]) << 16)
-				| (int(p[3]) << 24);
-		}
-
-		int to_put = std::min(length, request_size - size);
-		buffer->Write(data, to_put);
-		size += to_put;
-		length -= to_put;
-		
-		if(size == request_size) {
-			Cluster::Singleton()->Execute(this, buffer);
-			buffer = NULL;
+		if(received_bytes_of_size < 4) {
+			int bytes_to_copy = std::min(4-received_bytes_of_size, length);
+			memcpy(received_size+received_bytes_of_size, data, bytes_to_copy);
+			length -= bytes_to_copy;
+			data += bytes_to_copy;
+			received_bytes_of_size += bytes_to_copy;
+			if(received_bytes_of_size == 4) {
+				bytes_to_receive =
+					(int(received_size[0]))
+					| (int(received_size[1]) << 8)
+					| (int(received_size[2]) << 16)
+					| (int(received_size[3]) << 24);
+			}
+		} else {
+			int32_t bytes_to_copy = std::min(bytes_to_receive, length);
+			buffer.Write(data, bytes_to_copy);
+			data += bytes_to_copy;
+			length -= bytes_to_copy;
+			bytes_to_receive -= bytes_to_copy;
+			if(bytes_to_receive == 0) {
+				if(onReceiveMessage)
+					(*onReceiveMessage)(buffer, this);
+				buffer.Clear();
+			}
 		}
 	}
 }
 
-void Socket::Send(Buffer* sendBuffer) {
+void Socket::Send(Buffer& sendBuffer) {
 	loop->PushEvent(
-			Event {
-				.type=Event::SEND,
-				.buffer=sendBuffer,
-				.socket=this
+			new Event {
+				.after = NULL,
+				.buffer_or_ip=std::move(sendBuffer),
+				.socket=this,
+				.listenSocket = NULL,
+				.type=Event::SOCKET_SEND
 			});
+}
+
+void Socket::InternalSend(Buffer& buffer) {
+	int32_t length = buffer.Size();
+	uint8_t b[4];
+	b[0] = (length)&0xFF;
+	b[1] = (length>>8)&0xFF;
+	b[2] = (length>>16)&0xFF;
+	b[3] = (length>>24)&0xFF;
+	us_socket_write(ssl, socket, (char*)b, 4, length);
+	us_socket_write(ssl, socket, (char*)buffer.Data(), length, 0);
+}
+
+void Socket::InternalClose() {
+	us_socket_close(ssl, socket, 0, NULL);
 }
 
