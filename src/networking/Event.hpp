@@ -11,7 +11,7 @@
  *  but WITHOUT ANY WARRANTY; without even the implied warranty of
  *  MERCHANTABILITY or FITNESS FOR A PARTICULAR PURPOSE.  See the
  *  GNU General Public License for more details.
- *
+*
  *  You should have received a copy of the GNU General Public License
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
@@ -21,28 +21,46 @@
 #ifndef DORPC_NETWORKING_EVENT_HPP
 #define DORPC_NETWORKING_EVENT_HPP
 
+#include <functional>
+
+#include <concurrent.hpp>
+
 #include "Buffer.hpp"
 
-struct Event {
+class Event : public concurrent::node<Event> {
+public:
+	
+	void Run();
+	static Event* Allocate();
+	static void Free(Event* event);
 	
 	enum Type {
 		NONE,
-		SEND,
-		CLOSE_SOCKET,
-		CLOSE_CONTEXT,
-		RECONNECT
+		
+		LISTEN_SOCKET_START,
+		LISTEN_SOCKET_STOP,
+		
+		SOCKET_CONNECT,
+		// SOCKET_RECONNECT,
+		SOCKET_CLOSE,
+		SOCKET_SEND,
+		
+		// LOOP_CLOSE,
+		
+		// ALLCAST,
+		// MULTICAST
 	};
 	
-	Type type;
-	union {
-		Buffer* buffer;
-		Buffer* ip;
-	};
+	std::function<void(Event&)> after;
+	Buffer buffer_or_ip;
 	union {
 		struct Socket* socket;
 		struct Context* context;
-		int port;
+		struct Loop* loop;
 	};
+	struct us_listen_socket_t* listenSocket;
+	int port;
+	Type type;
 };
 
 #endif

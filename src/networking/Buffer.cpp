@@ -18,32 +18,38 @@
 
 #include "Buffer.hpp"
 
-#include <msgpack.h>
-
 #include <mpmc_pool.hpp>
 
 namespace impl {
-	concurrent::mpmc::pool<Buffer> bufferPool;
+	concurrent::mpmc::pool<Buffer::Vector> bufferPool;
 }
 
 Buffer::Buffer() {
-	buffer.size = 0;
-	buffer.data = NULL;
-	buffer.alloc = 0;
+	buffer = NULL;
+}
+
+Buffer::Buffer(Buffer&& other) {
+	Free(buffer);
+	buffer = other.buffer.load();
+	other.buffer = NULL;
 }
 
 Buffer::~Buffer() {
-	msgpack_sbuffer_destroy(&buffer);
-	buffer.size = 0;
-	buffer.data = NULL;
-	buffer.alloc = 0;
+	Free(buffer);
 }
 
-Buffer* Buffer::Allocate() {
+Buffer& Buffer::operator=(Buffer&& other) {
+	Free(buffer);
+	buffer = other.buffer.load();
+	other.buffer = NULL;
+	return *this;
+}
+
+Buffer::Vector* Buffer::Allocate() {
 	return impl::bufferPool.acquire();
 }
 
-void Buffer::Free(Buffer* buffer) {
+void Buffer::Free(Buffer::Vector* buffer) {
 	if(buffer)
 		impl::bufferPool.release(buffer);
 }

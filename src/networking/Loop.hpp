@@ -21,27 +21,25 @@
 #ifndef DORPC_NETWORKING_LOOP_HPP
 #define DORPC_NETWORKING_LOOP_HPP
 
-#include "networking/Event.hpp"
+#include <mpsc_queue.hpp>
+#include <set>
 
-#include <mutex>
-#include <vector>
+#include "Event.hpp"
 
 struct Loop {
 	struct us_loop_t* loop;
+	void * userData;
 	
-	std::mutex* mutex;
-	std::vector<Event>* events;
-	std::vector<Event>* poppedEvents;
+	concurrent::mpsc::queue<Event> *events;
+	std::set<Context*> *contexts;
 	
 	
-	void Init(struct us_loop_t* loop);
-	void Deinit();
-	void Destroy();
+	void InternalDestructor();
 	
 	void Run();
 	
 	
-	void PushEvent(Event event);
+	void PushEvent(Event* event);
 	void PopEvents();
 	
 	void OnWakeup();

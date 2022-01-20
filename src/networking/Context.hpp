@@ -21,29 +21,48 @@
 #ifndef DORPC_NETWORKING_CONTEXT_HPP
 #define DORPC_NETWORKING_CONTEXT_HPP
 
+#include <functional>
+#include <set>
+
+#include "Buffer.hpp"
+#include "Socket.hpp"
+
 struct Context {
-	struct us_context_t* context;
+	struct us_socket_context_t* context;
 	struct Loop* loop;
+	void* userData;
+	std::function<void(Socket*, int, char*, int)> *onNewSocket;
+	std::function<void(Buffer&, Socket*)> *onReceiveMessage;
 	int ssl;
+	std::set<Socket*>* sockets;
+	std::set<struct us_listen_socket_t*>* listenSockets;
 	
 	
-	void Init(struct us_context_t* context, int ssl);
-	void Destroy();
+	struct us_listen_socket_t* StartListening(const char* host, int port);
+	
+	Socket* InternalConnect(const char* ip, int port);
+	
+	void Destructor();
 	
 	
-	static void InternalOnOpenTcp(struct us_socket_t* socket, int isClient,
-			char* ip, int ipLength);
-	static void InternalOnOpenSsl(struct us_socket_t* socket, int isClient,
-			char* ip, int ipLength);
-	static void InternalOnData(struct us_socket_t* socket, char* data,
-			int length);
-	static void InternalOnEnd(struct us_socket_t* socket);
-	static void InternalOnClose(struct us_socket_t* socket, int code,
-			void* reason);
-	static void InternalOnTimeout(struct us_socket_t* socket);
-	static void InternalOnWritable(struct us_socket_t* socket);
+	static struct us_socket_t* InternalOnOpenSsl(struct us_socket_t* socket,
+			int isClient, char* ip, int ipLength);
+	static struct us_socket_t* InternalOnConnectioErrorOpenSsl(
+			struct us_socket_t* socket, int code);
+	static struct us_socket_t* InternalOnDataSsl(struct us_socket_t* socket,
+			char* data, int length);
+	static struct us_socket_t* InternalOnEndSsl(struct us_socket_t* socket);
+	static struct us_socket_t* InternalOnCloseSsl(struct us_socket_t* socket,
+			int code, void* reason);
+	static struct us_socket_t* InternalOnTimeoutSsl(struct us_socket_t* socket);
+	static struct us_socket_t* InternalOnWritableSsl(
+			struct us_socket_t* socket);
 	
-	static Context* Make();
+	static Context* Make(Loop* loop,
+			std::function<void(Socket*, int, char*, int)> onNewSocket,
+			std::function<void(Buffer&, Socket*)> onReceiveMessage,
+			const char* keyFileName, const char* certFileName,
+			const char* caFileName, const char* passphrase);
 };
 
 #endif
