@@ -54,6 +54,5 @@ namespace networking {
 		if(buffer)
 			impl::bufferPool.release(buffer);
 	}
-
 }
 

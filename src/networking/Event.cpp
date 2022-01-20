@@ -34,26 +34,26 @@ namespace networking {
 
 	void Event::Run() {
 		switch(type) {
-			case LISTEN_SOCKET_START:
-				context->StartListening((const char*)buffer_or_ip.Data(), port);
-				break;
-			case LISTEN_SOCKET_STOP:
-				context->listenSockets->erase(listenSocket);
-				us_listen_socket_close(context->ssl, listenSocket);
-				break;
+		case LISTEN_SOCKET_START:
+			context->StartListening((const char*)buffer_or_ip.Data(), port);
+			break;
+		case LISTEN_SOCKET_STOP:
+			context->listenSockets->erase(listenSocket);
+			us_listen_socket_close(context->ssl, listenSocket);
+			break;
 
-			case SOCKET_CONNECT:
-				context->InternalConnect((char*)buffer_or_ip.Data(), port);
-				break;
-			case SOCKET_CLOSE:
-				socket->InternalClose();
-				break;
-			case SOCKET_SEND:
-				socket->InternalSend(buffer_or_ip);
-				break;
+		case SOCKET_CONNECT:
+			context->InternalConnect((char*)buffer_or_ip.Data(), port);
+			break;
+		case SOCKET_CLOSE:
+			socket->InternalClose();
+			break;
+		case SOCKET_SEND:
+			socket->InternalSend(buffer_or_ip);
+			break;
 
-			default:
-				break;
+		default:
+			break;
 		}
 		if(after)
 			after(*this);
