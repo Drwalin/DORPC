@@ -16,11 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#ifndef DORPC_NETWORKING_EVENT_CPP
-#define DORPC_NETWORKING_EVENT_CPP
-
 #include <libusockets.h>
 #include <mpmc_pool.hpp>
 #include <concurrent.hpp>
@@ -32,45 +27,45 @@
 
 #include "Event.hpp"
 
-namespace impl {
-	concurrent::mpmc::pool<Event> eventPool;
-}
-
-void Event::Run() {
-	switch(type) {
-	case LISTEN_SOCKET_START:
-		context->StartListening((const char*)buffer_or_ip.Data(), port);
-		break;
-	case LISTEN_SOCKET_STOP:
-		context->listenSockets->erase(listenSocket);
-		us_listen_socket_close(context->ssl, listenSocket);
-		break;
-		
-	case SOCKET_CONNECT:
-		context->InternalConnect((char*)buffer_or_ip.Data(), port);
-		break;
-	case SOCKET_CLOSE:
-		socket->InternalClose();
-		break;
-	case SOCKET_SEND:
-		socket->InternalSend(buffer_or_ip);
-		break;
-		
-	default:
-		break;
+namespace networking {
+	namespace impl {
+		concurrent::mpmc::pool<Event> eventPool;
 	}
-	if(after)
-		after(*this);
-}
 
-Event* Allocate() {
-	return impl::eventPool.acquire();
-}
+	void Event::Run() {
+		switch(type) {
+			case LISTEN_SOCKET_START:
+				context->StartListening((const char*)buffer_or_ip.Data(), port);
+				break;
+			case LISTEN_SOCKET_STOP:
+				context->listenSockets->erase(listenSocket);
+				us_listen_socket_close(context->ssl, listenSocket);
+				break;
 
-void Free(Event* event) {
-	if(event)
-		impl::eventPool.release(event);
-}
+			case SOCKET_CONNECT:
+				context->InternalConnect((char*)buffer_or_ip.Data(), port);
+				break;
+			case SOCKET_CLOSE:
+				socket->InternalClose();
+				break;
+			case SOCKET_SEND:
+				socket->InternalSend(buffer_or_ip);
+				break;
 
-#endif
+			default:
+				break;
+		}
+		if(after)
+			after(*this);
+	}
+
+	Event* Allocate() {
+		return impl::eventPool.acquire();
+	}
+
+	void Free(Event* event) {
+		if(event)
+			impl::eventPool.release(event);
+	}
+}
 

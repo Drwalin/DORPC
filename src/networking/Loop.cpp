@@ -16,77 +16,72 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
-#ifndef DORPC_NETWORKING_LOOP_CPP
-#define DORPC_NETWORKING_LOOP_CPP
-
 #include <libusockets.h>
 
 #include "Loop.hpp"
 
-void Loop::InternalDestructor() {
-	delete events;
-	events = NULL;
-	delete contexts;
-	contexts = NULL;
-	us_loop_free(loop);
-}
+namespace networking {
+	void Loop::InternalDestructor() {
+		delete events;
+		events = NULL;
+		delete contexts;
+		contexts = NULL;
+		us_loop_free(loop);
+	}
 
-void Loop::Run() {
-	us_loop_run(loop);
-}
+	void Loop::Run() {
+		us_loop_run(loop);
+	}
 
 
-void Loop::PushEvent(Event* event) {
-	events->push(event);
-	us_wakeup_loop(loop);
-}
+	void Loop::PushEvent(Event* event) {
+		events->push(event);
+		us_wakeup_loop(loop);
+	}
 
-void Loop::PopEvents() {
-	Event* event;
-	while((event = events->pop()) != NULL) {
-		if(event)
-			event->Run();
-		else
-			break;
+	void Loop::PopEvents() {
+		Event* event;
+		while((event = events->pop()) != NULL) {
+			if(event)
+				event->Run();
+			else
+				break;
+		}
+	}
+
+	void Loop::OnWakeup() {
+		PopEvents();
+	}
+
+	void Loop::OnPre() {
+		PopEvents();
+	}
+
+	void Loop::OnPost() {
+		PopEvents();
+	}
+
+	void Loop::InternalOnWakeup(struct us_loop_t* loop) {
+		((Loop*)us_loop_ext(loop))->OnWakeup();
+	}
+
+	void Loop::InternalOnPre(struct us_loop_t* loop) {
+		((Loop*)us_loop_ext(loop))->OnPre();
+	}
+
+	void Loop::InternalOnPost(struct us_loop_t* loop) {
+		((Loop*)us_loop_ext(loop))->OnPost();
+	}
+
+	Loop* Loop::Make() {
+		struct us_loop_t* us_loop = us_create_loop(0, InternalOnWakeup,
+				InternalOnPre, InternalOnPost, sizeof(Loop));
+		Loop* loop = (Loop*)us_loop_ext(us_loop);
+		loop->loop = us_loop;
+		loop->userData = NULL;
+		loop->events = new concurrent::mpsc::queue<Event>();
+		loop->contexts = new std::set<Context*>();
+		return loop;
 	}
 }
-
-void Loop::OnWakeup() {
-	PopEvents();
-}
-
-void Loop::OnPre() {
-	PopEvents();
-}
-
-void Loop::OnPost() {
-	PopEvents();
-}
-
-void Loop::InternalOnWakeup(struct us_loop_t* loop) {
-	((Loop*)us_loop_ext(loop))->OnWakeup();
-}
-
-void Loop::InternalOnPre(struct us_loop_t* loop) {
-	((Loop*)us_loop_ext(loop))->OnPre();
-}
-
-void Loop::InternalOnPost(struct us_loop_t* loop) {
-	((Loop*)us_loop_ext(loop))->OnPost();
-}
-
-Loop* Loop::Make() {
-	struct us_loop_t* us_loop = us_create_loop(0, InternalOnWakeup,
-			InternalOnPre, InternalOnPost, sizeof(Loop));
-	Loop* loop = (Loop*)us_loop_ext(us_loop);
-	loop->loop = us_loop;
-	loop->userData = NULL;
-	loop->events = new concurrent::mpsc::queue<Event>();
-	loop->contexts = new std::set<Context*>();
-	return loop;
-}
-
-#endif
 
