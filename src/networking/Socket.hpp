@@ -21,6 +21,7 @@
 
 #include <cinttypes>
 #include <functional>
+#include <libusockets.h>
 
 #include "Buffer.hpp"
 

@@ -21,6 +21,7 @@
 
 #include <functional>
 #include <set>
+#include <libusockets.h>
 
 #include "Buffer.hpp"
 #include "Socket.hpp"

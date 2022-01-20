@@ -1,5 +1,11 @@
 
-ARGS=-I../src -I../Concurrent -I../uSockets/src -std=c++2a -pedantic -Wall ../src/networking/*.cpp ../uSockets/uSockets.a -lpthread -ggdb3
+build:
+	cd .. ; make $(MFLAGS)
 
-networking: networking_test.cpp
-	g++ networking_test.cpp $(ARGS)
+run:
+	cd .. ; make run $(MFLAGS)
+
+.PHONY: clean
+clean:
+	cd .. ; make clean
+
