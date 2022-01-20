@@ -20,37 +20,40 @@
 
 #include <mpmc_pool.hpp>
 
-namespace impl {
-	concurrent::mpmc::pool<Buffer::Vector> bufferPool;
-}
+namespace networking {
+	namespace impl {
+		concurrent::mpmc::pool<Buffer::Vector> bufferPool;
+	}
 
-Buffer::Buffer() {
-	buffer = NULL;
-}
+	Buffer::Buffer() {
+		buffer = NULL;
+	}
 
-Buffer::Buffer(Buffer&& other) {
-	Free(buffer);
-	buffer = other.buffer.load();
-	other.buffer = NULL;
-}
+	Buffer::Buffer(Buffer&& other) {
+		Free(buffer);
+		buffer = other.buffer.load();
+		other.buffer = NULL;
+	}
 
-Buffer::~Buffer() {
-	Free(buffer);
-}
+	Buffer::~Buffer() {
+		Free(buffer);
+	}
 
-Buffer& Buffer::operator=(Buffer&& other) {
-	Free(buffer);
-	buffer = other.buffer.load();
-	other.buffer = NULL;
-	return *this;
-}
+	Buffer& Buffer::operator=(Buffer&& other) {
+		Free(buffer);
+		buffer = other.buffer.load();
+		other.buffer = NULL;
+		return *this;
+	}
 
-Buffer::Vector* Buffer::Allocate() {
-	return impl::bufferPool.acquire();
-}
+	Buffer::Vector* Buffer::Allocate() {
+		return impl::bufferPool.acquire();
+	}
 
-void Buffer::Free(Buffer::Vector* buffer) {
-	if(buffer)
-		impl::bufferPool.release(buffer);
+	void Buffer::Free(Buffer::Vector* buffer) {
+		if(buffer)
+			impl::bufferPool.release(buffer);
+	}
+
 }
 

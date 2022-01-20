@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #ifndef DORPC_NETWORKING_SOCKET_HPP
 #define DORPC_NETWORKING_SOCKET_HPP
 
@@ -26,39 +24,41 @@
 
 #include "Buffer.hpp"
 
-struct Socket {
-	struct us_socket_t* socket;
-	struct Context* context;
-	struct Loop* loop;
-	int ssl;
-	void* userData;
-	
-	Buffer buffer;
-	int32_t received_bytes_of_size;
-	uint8_t received_size[4];
-	int32_t bytes_to_receive;
-	
-	std::function<void(Buffer&, Socket*)> *onReceiveMessage;
-	
-	
-	
-	void Init(struct us_socket_t* socket, int ssl);
-	void Destroy();
-	
-	
-	void Send(Buffer& sendBuffer);
-	
-	
-	void OnOpen(char* ip, int ipLength);
-	void OnData(uint8_t* data, int length);
-	void OnEnd();
-	void OnClose(int code, void* reason);
-	void OnTimeout();
-	void OnWritable();
-	
-	void InternalSend(Buffer& buffer);
-	void InternalClose();
-};
+namespace networking {
+	struct Socket {
+		struct us_socket_t* socket;
+		struct Context* context;
+		struct Loop* loop;
+		int ssl;
+		void* userData;
+
+		Buffer buffer;
+		int32_t received_bytes_of_size;
+		uint8_t received_size[4];
+		int32_t bytes_to_receive;
+
+		std::function<void(Buffer&, Socket*)> *onReceiveMessage;
+
+
+
+		void Init(struct us_socket_t* socket, int ssl);
+		void Destroy();
+
+
+		void Send(Buffer& sendBuffer);
+
+
+		void OnOpen(char* ip, int ipLength);
+		void OnData(uint8_t* data, int length);
+		void OnEnd();
+		void OnClose(int code, void* reason);
+		void OnTimeout();
+		void OnWritable();
+
+		void InternalSend(Buffer& buffer);
+		void InternalClose();
+	};
+}
 
 #endif
 

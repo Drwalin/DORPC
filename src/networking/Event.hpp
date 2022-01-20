@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #ifndef DORPC_NETWORKING_EVENT_HPP
 #define DORPC_NETWORKING_EVENT_HPP
 
@@ -27,41 +25,43 @@
 
 #include "Buffer.hpp"
 
-class Event : public concurrent::node<Event> {
-public:
-	
-	void Run();
-	static Event* Allocate();
-	static void Free(Event* event);
-	
-	enum Type {
-		NONE,
-		
-		LISTEN_SOCKET_START,
-		LISTEN_SOCKET_STOP,
-		
-		SOCKET_CONNECT,
-		// SOCKET_RECONNECT,
-		SOCKET_CLOSE,
-		SOCKET_SEND,
-		
-		// LOOP_CLOSE,
-		
-		// ALLCAST,
-		// MULTICAST
+namespace networking {
+	class Event : public concurrent::node<Event> {
+	public:
+
+		void Run();
+		static Event* Allocate();
+		static void Free(Event* event);
+
+		enum Type {
+			NONE,
+
+			LISTEN_SOCKET_START,
+			LISTEN_SOCKET_STOP,
+
+			SOCKET_CONNECT,
+			// SOCKET_RECONNECT,
+			SOCKET_CLOSE,
+			SOCKET_SEND,
+
+			// LOOP_CLOSE,
+
+			// ALLCAST,
+			// MULTICAST
+		};
+
+		std::function<void(Event&)> after;
+		Buffer buffer_or_ip;
+		union {
+			struct Socket* socket;
+			struct Context* context;
+			struct Loop* loop;
+		};
+		struct us_listen_socket_t* listenSocket;
+		int port;
+		Type type;
 	};
-	
-	std::function<void(Event&)> after;
-	Buffer buffer_or_ip;
-	union {
-		struct Socket* socket;
-		struct Context* context;
-		struct Loop* loop;
-	};
-	struct us_listen_socket_t* listenSocket;
-	int port;
-	Type type;
-};
+}
 
 #endif
 

@@ -16,8 +16,6 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#pragma once
-
 #ifndef DORPC_NETWORKING_LOOP_HPP
 #define DORPC_NETWORKING_LOOP_HPP
 
@@ -26,32 +24,34 @@
 
 #include "Event.hpp"
 
-struct Loop {
-	struct us_loop_t* loop;
-	void * userData;
-	
-	concurrent::mpsc::queue<Event> *events;
-	std::set<Context*> *contexts;
-	
-	
-	void InternalDestructor();
-	
-	void Run();
-	
-	
-	void PushEvent(Event* event);
-	void PopEvents();
-	
-	void OnWakeup();
-	void OnPre();
-	void OnPost();
-	
-	static void InternalOnWakeup(struct us_loop_t* loop);
-	static void InternalOnPre(struct us_loop_t* loop);
-	static void InternalOnPost(struct us_loop_t* loop);
-	
-	static Loop* Make();
-};
+namespace networking {
+	struct Loop {
+		struct us_loop_t* loop;
+		void * userData;
+
+		concurrent::mpsc::queue<Event> *events;
+		std::set<Context*> *contexts;
+
+
+		void InternalDestructor();
+
+		void Run();
+
+
+		void PushEvent(Event* event);
+		void PopEvents();
+
+		void OnWakeup();
+		void OnPre();
+		void OnPost();
+
+		static void InternalOnWakeup(struct us_loop_t* loop);
+		static void InternalOnPre(struct us_loop_t* loop);
+		static void InternalOnPost(struct us_loop_t* loop);
+
+		static Loop* Make();
+	};
+}
 
 #endif
 
