@@ -91,8 +91,7 @@ namespace networking {
 			return Data()[id];
 		}
 
-		private:
-
+	private:
 		static Vector* Allocate();
 		static void Free(Vector* buffer);
 	};

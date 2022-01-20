@@ -28,7 +28,6 @@ namespace networking {
 		return (Socket*)us_socket_ext(ssl, us_socket);
 	}
 
-
 	void Context::Destructor() {
 		loop->contexts->erase(this);
 		if(onNewSocket)

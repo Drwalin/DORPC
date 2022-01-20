@@ -33,7 +33,6 @@ namespace networking {
 		us_loop_run(loop);
 	}
 
-
 	void Loop::PushEvent(Event* event) {
 		events->push(event);
 		us_wakeup_loop(loop);
