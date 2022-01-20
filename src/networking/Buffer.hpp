@@ -70,15 +70,27 @@ namespace networking {
 				buffer = Allocate();
 		}
 
-		inline void Write(const void* data, int32_t size) {
+		inline void Write(uint8_t byte) {
 			Assure();
-			buffer.load()->append(data, size);
+			buffer.load()->append(&byte, 1);
+		}
+
+		inline void Write(const void* data, int32_t size) {
+			if(data && size) {
+				Assure();
+				buffer.load()->append(data, size);
+			}
 		}
 
 		inline int32_t Size() const {
 			if(buffer == NULL)
 				return 0;
 			return buffer.load()->size();
+		}
+		inline uint8_t* Data() const {
+			if(buffer.load())
+				return &(buffer.load()->operator[](0));
+			return NULL;
 		}
 		inline uint8_t* Data() {
 			Assure();
