@@ -5,7 +5,6 @@
 	path = MakefileSTD
 	url = https://github.com/Drwalin/MakefileSTD.git
 [submodule "msgpack-c"]
-	path = msgpack-c
 	url = https://github.com/msgpack/msgpack-c.git
 [submodule "Concurrent"]
 	path = Concurrent
