@@ -34,6 +34,31 @@
 #include "networking/Buffer.hpp"
 
 namespace serialization {
+	template<int size>
+	struct UINT {
+		using type = uint64_t;
+	};
+	
+	template<>
+	struct UINT<1> {
+		using type = uint8_t;
+	};
+	
+	template<>
+	struct UINT<2> {
+		using type = uint16_t;
+	};
+	
+	template<>
+	struct UINT<4> {
+		using type = uint32_t;
+	};
+	
+	template<>
+	struct UINT<8> {
+		using type = uint64_t;
+	};
+	
 	class Writer {
 	public:
 		
@@ -55,17 +80,17 @@ namespace serialization {
 		inline Writer& operator<<(uint64_t v) { return WriteWebOrder(v); }
 		
 		inline Writer& operator<<(float v) {
-			return WriteWebOrder(*(uint32_t*)&v);
+			return WriteWebOrder(v);
 		}
 		
 		inline Writer& operator<<(double v) {
-			return WriteWebOrder(*(uint64_t*)&v);
+			return WriteWebOrder(v);
 		}
 		
 		template<typename T>
 		inline Writer& operator<<(const std::vector<T>& v) {
 			*this << (int32_t)v.size();
-			for(int i=0; i<v.size(); ++i)
+			for(size_t i=0; i<v.size(); ++i)
 				*this << v[i];
 			return *this;
 		}
@@ -104,7 +129,7 @@ namespace serialization {
 		template<typename T>
 		inline Writer& operator<<(const std::set<T>& v) {
 			*this << (int32_t)v.size();
-			for(const auto& e : v)
+			for(const T& e : v)
 				*this << e;
 			return *this;
 		}
@@ -112,7 +137,7 @@ namespace serialization {
 		template<typename T>
 		inline Writer& operator<<(const std::unordered_set<T>& v) {
 			*this << (int32_t)v.size();
-			for(const auto& e : v)
+			for(const T& e : v)
 				*this << e;
 			return *this;
 		}
@@ -142,8 +167,10 @@ namespace serialization {
 		
 		template<typename T>
 		inline Writer& WriteWebOrder(T v) {
-			for(int i=0; i<sizeof(T)*8; i+=8) {
-				buffer.Write((uint8_t)(((uint64_t)(v>>i))&0xFF));
+			typename UINT<sizeof(T)>::type _v
+				= *(typename UINT<sizeof(T)>::type*)&v;
+			for(size_t i=0; i<sizeof(T)*8; i+=8) {
+				buffer.Write((uint8_t)((_v>>i)&0xFF));
 			}
 			return *this;
 		}
@@ -161,21 +188,21 @@ namespace serialization {
 		inline Reader(networking::Buffer& buffer) : buffer(buffer), read(0) {
 		}
 		
-		inline Reader& operator>>(int8_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(int16_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(int32_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(int64_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(uint8_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(uint16_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(uint32_t v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(uint64_t v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(int8_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(int16_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(int32_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(int64_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(uint8_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(uint16_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(uint32_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(uint64_t &v) { return ReadWebOrder(v); }
 		
-		inline Reader& operator>>(float v) {
-			return ReadWebOrder(*(uint32_t*)&v);
+		inline Reader& operator>>(float &v) {
+			return ReadWebOrder(v);
 		}
 		
-		inline Reader& operator>>(double v) {
-			return ReadWebOrder(*(uint64_t*)&v);
+		inline Reader& operator>>(double &v) {
+			return ReadWebOrder(v);
 		}
 		
 		template<typename T>
@@ -183,7 +210,7 @@ namespace serialization {
 			int32_t size=0;
 			*this >> size;
 			v.resize(size);
-			for(int i=0; i<v.size(); ++i)
+			for(size_t i=0; i<v.size(); ++i)
 				*this >> v[i];
 			return *this;
 		}
@@ -228,7 +255,7 @@ namespace serialization {
 		inline Reader& operator>>(std::set<T>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(int i=0; i<v.size(); ++i) {
+			for(size_t i=0; i<size; ++i) {
 				T _v;
 				*this >> _v;
 				v.insert(_v);
@@ -240,7 +267,8 @@ namespace serialization {
 		inline Reader& operator>>(std::unordered_set<T>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(int i=0; i<v.size(); ++i) {
+			v.resize(size);
+			for(size_t i=0; i<size; ++i) {
 				T _v;
 				*this >> _v;
 				v.insert(_v);
@@ -252,7 +280,7 @@ namespace serialization {
 		inline Reader& operator>>(std::map<K, V>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(int i=0; i<v.size(); ++i) {
+			for(size_t i=0; i<size; ++i) {
 				K k;
 				*this >> k;
 				*this >> v[k];
@@ -264,7 +292,8 @@ namespace serialization {
 		inline Reader& operator>>(std::unordered_map<K, V>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(int i=0; i<v.size(); ++i) {
+			v.resize(size);
+			for(size_t i=0; i<size; ++i) {
 				K k;
 				*this >> k;
 				*this >> v[k];
@@ -283,11 +312,13 @@ namespace serialization {
 	private:
 		
 		template<typename T>
-		inline Reader& ReadWebOrder(T v) {
-			v = 0;
-			if(read+sizeof(T) <= buffer.Size()) {
-				for(int i=0; i<sizeof(T)*8; i+=8) {
-					v |= ((T)buffer[read++]) << i;
+		inline Reader& ReadWebOrder(T& v) {
+			typename UINT<sizeof(T)>::type& _v
+				= *(typename UINT<sizeof(T)>::type*)&v;
+			_v = 0;
+			if((int32_t)sizeof(T)+read <= buffer.Size()) {
+				for(size_t i=0; i<sizeof(T)*8; i+=8) {
+					_v |= ((typename UINT<sizeof(T)>::type)buffer[read++]) << i;
 				}
 			}
 			return *this;

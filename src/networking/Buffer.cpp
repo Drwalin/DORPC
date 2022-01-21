@@ -47,7 +47,9 @@ namespace networking {
 	}
 
 	Buffer::Vector* Buffer::Allocate() {
-		return impl::bufferPool.acquire();
+		Buffer::Vector* v = impl::bufferPool.acquire();
+		v->clear();
+		return v;
 	}
 
 	void Buffer::Free(Buffer::Vector* buffer) {

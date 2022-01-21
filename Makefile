@@ -37,7 +37,7 @@ $(LIBFILE): $(OBJECTS) uSockets/uSockets.a
 
 # tests:
 
-TESTS = tests/networking_test.exe
+TESTS = tests/networking_test.exe tests/serialization_test.exe
 tests: $(TESTS)
 
 tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a
@@ -48,6 +48,7 @@ run: $(TESTS)
 	@echo ""
 	@echo Testing
 	@echo ""
+	tests/serialization_test.exe
 	tests/networking_test.exe
 
 # uSockets:
