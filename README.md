@@ -133,11 +133,12 @@ PointersRange can cover milions or bilions of pointers.
 -------|--------|------------
 1 | Basic networking (passing messages - byte arrays of given data size) | TCP(TLS) / UDP(DTLS)
 2 | serialization |
-3 | Routing ; automatic establishing/selecting leader | leader provides nodes with theirs id's ; some uniform data
-4 | RPC (by NodeID)
-5 | Finding location of distributed objects
-6 | objects management | allocating ; transfering between nodes ; freeing ; storing in database (?)
-7 | RMI (by object uniform pointer/URI/UUID/SnowflakeID))
+3 | RPC | RPC direct two way
+4 | Routing ; automatic establishing/selecting leader | leader provides nodes with theirs id's ; some uniform data
+5 | RPC (by NodeID)
+6 | Finding location of distributed objects
+7 | objects management | allocating ; transfering between nodes ; freeing ; storing in database (?)
+8 | RMI (by object uniform pointer/URI/UUID/SnowflakeID))
 
 
 
