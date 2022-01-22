@@ -114,7 +114,7 @@ PointersRange can cover milions or bilions of pointers.
 
 
 
-## Application structure
+## Application layer structure
 
 #### Solution 1:
 
@@ -129,16 +129,18 @@ PointersRange can cover milions or bilions of pointers.
 
 #### Solution 2:
 
- Layer | Module | Mechanisms
--------|--------|------------
-1 | Basic networking (passing messages - byte arrays of given data size) | TCP(TLS) / UDP(DTLS)
-2 | serialization |
-3 | RPC | RPC direct two way
-4 | Routing ; automatic establishing/selecting leader | leader provides nodes with theirs id's ; some uniform data
-5 | RPC (by NodeID)
-6 | Finding location of distributed objects
-7 | objects management | allocating ; transfering between nodes ; freeing ; storing in database (?)
-8 | RMI (by object uniform pointer/URI/UUID/SnowflakeID))
+ Progress | Layer | Module | Mechanisms
+-------|--------|------------|------
+\+| 1  | Basic networking | Passing messages - byte arrays of given data size TCP(TLS) / UDP(DTLS)
+\+| 2  | Serialization |
+\>| 3  | Direct two way RPC | By function id without any type safety mechanism
+| | 4  | RPC cd. | With function name synchronisation between nodes to universal translation from function name to id. Slave (connection initializer) requests master function table.
+| | 5  | RPC cd. | With type safety (type as part of function name)
+| | 6  | Routing ; automatic leader election | Leader provides nodes with theirs id's ; some uniform data
+| | 7  | RPC (by NodeID)
+| | 8  | Finding location of distributed objects | By object uniform pointer/URI/UUID/SnowflakeID
+| | 9  | Objects management | allocating ; transfering between nodes ; freeing ; storing in database (?)
+| | 10 | RMI | By object uniform pointer/URI/UUID/SnowflakeID.
 
 
 

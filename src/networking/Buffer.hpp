@@ -41,10 +41,7 @@ namespace networking {
 			inline uint8_t* data() {return vector.data();}
 		};
 
-		union {
-			std::atomic<Buffer::Vector*> buffer;
-			std::atomic<uint64_t> __atomic;
-		};
+		std::atomic<Buffer::Vector*> buffer;
 
 		Buffer(const Buffer&) = delete;
 		Buffer(Buffer&) = delete;

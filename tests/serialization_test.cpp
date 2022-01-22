@@ -1,8 +1,7 @@
 
-#include <serialization/serializator.hpp>
-
 #include <iostream>
-#include <ostream>
+
+#include <serialization/serializator.hpp>
 
 int correct_results = 0;
 int total_results = 0;
@@ -10,7 +9,7 @@ int total_results = 0;
 template<typename T>
 std::ostream& operator<<(std::ostream& s, std::vector<T> v) {
 	s << "(" << v.size() << ")[";
-	for(int i=0; i<v.size(); ++i) {
+	for(size_t i=0; i<v.size(); ++i) {
 		if(i!=0)
 			s << ",\n";
 		s << v[i];
@@ -85,15 +84,12 @@ int main() {
 	test_compare<double, -14>(3242343213.21321);
 	test_compare<double, -13>(321424323.24324321321);
 	
-	test_compare<int8_t,  -12>('s');
-	test_compare<int8_t,  -11>(-123);
 	test_compare<int16_t, -10>(12343);
 	test_compare<int16_t, -9>(-12343);
 	test_compare<int32_t, -8>(12354354);
 	test_compare<int32_t, -7>(-123543543);
 	test_compare<int64_t, -6>(123543543543545l);
 	test_compare<int64_t, -5>(-1234654656546654l);
-	test_compare<uint8_t,  -4>('z');
 	test_compare<uint16_t, -3>(12354);
 	test_compare<uint32_t, -2>(12354564);
 	test_compare<uint64_t, -1>(1237657657675);
