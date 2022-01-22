@@ -28,10 +28,12 @@
 #include <map>
 #include <unordered_set>
 #include <unordered_map>
-#include <iostream>
+#include <tuple>
+#include <utility>
+#include <cstddef>
 #include <cstring>
 
-#include "networking/Buffer.hpp"
+#include "../networking/Buffer.hpp"
 
 namespace serialization {
 	template<int size>
@@ -70,14 +72,18 @@ namespace serialization {
 			return buffer;
 		}
 		
-		inline Writer& operator<<(int8_t v) { return WriteWebOrder(v); }
+		inline Writer& operator<<(int8_t v) = delete;
 		inline Writer& operator<<(int16_t v) { return WriteWebOrder(v); }
 		inline Writer& operator<<(int32_t v) { return WriteWebOrder(v); }
 		inline Writer& operator<<(int64_t v) { return WriteWebOrder(v); }
-		inline Writer& operator<<(uint8_t v) { return WriteWebOrder(v); }
+		inline Writer& operator<<(long long v) { return WriteWebOrder(v); }
+		inline Writer& operator<<(uint8_t v) = delete;
 		inline Writer& operator<<(uint16_t v) { return WriteWebOrder(v); }
 		inline Writer& operator<<(uint32_t v) { return WriteWebOrder(v); }
 		inline Writer& operator<<(uint64_t v) { return WriteWebOrder(v); }
+		inline Writer& operator<<(unsigned long long v) {
+			return WriteWebOrder(v);
+		}
 		
 		inline Writer& operator<<(float v) {
 			return WriteWebOrder(v);
@@ -167,8 +173,11 @@ namespace serialization {
 		
 		template<typename T>
 		inline Writer& WriteWebOrder(T v) {
-			typename UINT<sizeof(T)>::type _v
-				= *(typename UINT<sizeof(T)>::type*)&v;
+			union {
+				T v2;
+				typename UINT<sizeof(T)>::type _v;
+			};
+			v2 = v;
 			for(size_t i=0; i<sizeof(T)*8; i+=8) {
 				buffer.Write((uint8_t)((_v>>i)&0xFF));
 			}
@@ -185,17 +194,24 @@ namespace serialization {
 	class Reader {
 	public:
 		
+		inline networking::Buffer& GetBuffer() { return buffer; }
+		inline int32_t GetReadBytes() { return read; }
+		
 		inline Reader(networking::Buffer& buffer) : buffer(buffer), read(0) {
 		}
 		
-		inline Reader& operator>>(int8_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(int8_t &v) = delete;
 		inline Reader& operator>>(int16_t &v) { return ReadWebOrder(v); }
 		inline Reader& operator>>(int32_t &v) { return ReadWebOrder(v); }
 		inline Reader& operator>>(int64_t &v) { return ReadWebOrder(v); }
-		inline Reader& operator>>(uint8_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(long long &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(uint8_t &v) = delete;
 		inline Reader& operator>>(uint16_t &v) { return ReadWebOrder(v); }
 		inline Reader& operator>>(uint32_t &v) { return ReadWebOrder(v); }
 		inline Reader& operator>>(uint64_t &v) { return ReadWebOrder(v); }
+		inline Reader& operator>>(unsigned long long &v) {
+			return ReadWebOrder(v);
+		}
 		
 		inline Reader& operator>>(float &v) {
 			return ReadWebOrder(v);
@@ -255,7 +271,7 @@ namespace serialization {
 		inline Reader& operator>>(std::set<T>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(size_t i=0; i<size; ++i) {
+			for(int32_t i=0; i<size; ++i) {
 				T _v;
 				*this >> _v;
 				v.insert(_v);
@@ -280,7 +296,7 @@ namespace serialization {
 		inline Reader& operator>>(std::map<K, V>& v) {
 			int32_t size=0;
 			*this >> size;
-			for(size_t i=0; i<size; ++i) {
+			for(int32_t i=0; i<size; ++i) {
 				K k;
 				*this >> k;
 				*this >> v[k];
@@ -313,20 +329,57 @@ namespace serialization {
 		
 		template<typename T>
 		inline Reader& ReadWebOrder(T& v) {
-			typename UINT<sizeof(T)>::type& _v
-				= *(typename UINT<sizeof(T)>::type*)&v;
+			union {
+				T v2;
+				typename UINT<sizeof(T)>::type _v;
+			};
 			_v = 0;
 			if((int32_t)sizeof(T)+read <= buffer.Size()) {
 				for(size_t i=0; i<sizeof(T)*8; i+=8) {
 					_v |= ((typename UINT<sizeof(T)>::type)buffer[read++]) << i;
 				}
 			}
+			v = v2;
 			return *this;
 		}
 		
 		networking::Buffer& buffer;
 		int32_t read;
 	};
+	
+	template <typename Tuple, typename F, std::size_t ...Indices>
+	void for_each_impl(Tuple&& tuple, F&& f, std::index_sequence<Indices...>) {
+		using swallow = int[];
+		(void)swallow{1,
+			(f(std::get<Indices>(std::forward<Tuple>(tuple))), void(), int{})...
+		};
+	}
+	
+	template <typename Tuple, typename F>
+	void for_each(Tuple&& tuple, F&& f) {
+		constexpr std::size_t N =
+			std::tuple_size<std::remove_reference_t<Tuple>>::value;
+		for_each_impl(std::forward<Tuple>(tuple), std::forward<F>(f),
+				std::make_index_sequence<N>{});
+	}
+
+	template<typename... Args>
+	inline Writer& operator<<(serialization::Writer& writer,
+			const std::tuple<Args...>& v) {
+		for_each(v, [&](const auto& x){
+					writer << x;
+				});
+		return writer;
+	}
+
+	template<typename... Args>
+	inline Reader& operator>>(serialization::Reader& reader,
+			std::tuple<Args...>& v) {
+		for_each(v, [&](auto& x){
+					reader >> x;
+				});
+		return reader;
+	}
 }
 
 #endif

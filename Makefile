@@ -29,6 +29,7 @@ CXXFLAGS += $(INCLUDE)
 OBJECTS = bin/networking/Buffer.o bin/networking/Socket.o
 OBJECTS += bin/networking/Context.o bin/networking/Loop.o
 OBJECTS += bin/networking/Event.o
+OBJECTS += bin/rpc/FunctionBase.o bin/rpc/FunctionRegistry.o
 
 all: $(LIBFILE) tests
 
@@ -38,6 +39,7 @@ $(LIBFILE): $(OBJECTS) uSockets/uSockets.a
 # tests:
 
 TESTS = tests/networking_test.exe tests/serialization_test.exe
+TESTS += tests/function_register_test.exe
 tests: $(TESTS)
 
 tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a
@@ -48,6 +50,7 @@ run: $(TESTS)
 	@echo ""
 	@echo Testing
 	@echo ""
+	tests/function_register_test.exe
 	tests/serialization_test.exe
 	tests/networking_test.exe
 
