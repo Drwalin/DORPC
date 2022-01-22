@@ -50,13 +50,27 @@ namespace rpc {
 	}
 	
 	
-	void FunctionRegistry::Call(serialization::Reader& args) {
+	bool FunctionRegistry::Call(serialization::Reader& args) {
 		uint32_t functionId;
 		args >> functionId;
 		FunctionBase* function = GetById(functionId);
 		if(function) {
 			function->Execute(args);
+			return true;
 		}
+		return false;
+	}
+	
+	bool FunctionRegistry::Call(serialization::Reader& args,
+				serialization::Writer& returned) {
+		uint32_t functionId;
+		args >> functionId;
+		FunctionBase* function = GetById(functionId);
+		if(function) {
+			function->ExecuteWithReturn(args, returned);
+			return true;
+		}
+		return false;
 	}
 }
 

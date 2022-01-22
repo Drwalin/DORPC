@@ -65,23 +65,27 @@ std::ostream& operator<<(std::ostream& s, networking::Buffer& buffer) {
 
 int valid=0, invalid=0, total=0;
 
-template<typename Ret, typename Args>
-Ret Call__(rpc::FunctionBase* function, Args args) {
-	serialization::Writer writer, ret;
-	writer << args;
-	serialization::Reader reader(writer.GetBuffer());
-	function->ExecuteWithReturn(reader, ret);
+template<typename Type, Type func, typename Ret, typename... Args>
+Ret Call__(Args... args) {
+	serialization::Writer preparedArgs, returned;
+	if(rpc::FunctionRegistry::PrepareFunctionCall<Type, func, Args...>(
+				preparedArgs, args...) == false)
+		return Ret();
+	serialization::Reader argsReader(preparedArgs.GetBuffer());
+	if(rpc::FunctionRegistry::Call(argsReader, returned) == false)
+		return Ret();
+	
+	serialization::Reader retReader(returned.GetBuffer());
 	Ret r;
-	serialization::Reader retReader(ret.GetBuffer());
 	retReader >> r;
 	return r;
 }
 
-template<typename Type, Type func, typename Args>
-void Call(int testId, Args args) {
-	using Ret = decltype(std::apply(func, args));
-	auto a = Call__<Ret>(FUNCTION(func), args);
-	auto b = std::apply(func, args);
+template<typename Type, Type func, typename... Args>
+void Call(int testId, Args... args) {
+	using Ret = decltype(func(args...));
+	auto a = Call__<Type, func, Ret, Args...>(args...);
+	auto b = func(args...);
 	bool result = a == b;
 	printf(" test %i ... %s\n", testId, result?"OK":"FAILED");
 	fflush(stdout);
@@ -92,8 +96,7 @@ void Call(int testId, Args args) {
 	++total;
 }
 
-#define CALL(I, F, ...) Call<decltype(&F), F>(I, \
-		rpc::FunctionTraits<decltype(&F)>::MakeTuple(__VA_ARGS__))
+#define CALL(I, F, a, b, c) Call<decltype(&F), F>(I, a, b, c)
 
 
 
@@ -116,15 +119,14 @@ int main() {
 	REGISTER_FUNCTION(functionA);
 	REGISTER_FUNCTION(functionB);
 	
-	CALL(1, functionA, 'a', 'b', 'c');
-	CALL(2, functionA, 'd', 'e', 'f');
-	CALL(3, functionA, 'g', 'h', 'i');
-	CALL(4, functionA, 'j', 'k', 'l');
-	
-	CALL(5, functionB, "AA:", {1, 1, 0}, {"__0", "__1"});
-	CALL(6, functionB, "_B:", {1, 1, 0}, {"__3", "__2"});
-	CALL(7, functionB, "C_:", {1, 1, 0}, {"__4", "__5", "_6"});
-	CALL(8, functionB, "++:", {1, 1, 0}, {"_9", "_10", "_11"});
+	Call<decltype(&functionA), functionA, int32_t, float, long long>(1, 'a', 'b', 'c');
+	Call<decltype(&functionA), functionA, int32_t, float, long long>(2, 'd', 'e', 'f');
+	Call<decltype(&functionA), functionA, int32_t, float, long long>(3, 'g', 'h', 'i');
+	Call<decltype(&functionA), functionA, int32_t, float, long long>(4, 'j', 'k', 'l');
+	Call<decltype(&functionB), functionB, std::string, std::vector<uint32_t>, std::vector<std::string>>(5, "AA:", {1, 1, 0}, {"__0", "__1"});
+	Call<decltype(&functionB), functionB, std::string, std::vector<uint32_t>, std::vector<std::string>>(6, "_B:", {1, 1, 0}, {"__3", "__2"});
+	Call<decltype(&functionB), functionB, std::string, std::vector<uint32_t>, std::vector<std::string>>(7, "C_:", {1, 2, 0}, {"__4", "__5", "_6"});
+	Call<decltype(&functionB), functionB, std::string, std::vector<uint32_t>, std::vector<std::string>>(8, "++:", {1, 2, 0}, {"_9", "_10", "_11"});
 	
 	
 	

@@ -38,7 +38,9 @@ namespace rpc {
 		static FunctionBase* GetById(uint32_t id);
 		static FunctionBase* GetByPtr(void* ptr);
 		
-		static void Call(serialization::Reader& args);
+		static bool Call(serialization::Reader& args);
+		static bool Call(serialization::Reader& args,
+				serialization::Writer& returned);
 		
 		template<typename Func, Func func, typename... Args>
 		static bool PrepareFunctionCall(serialization::Writer& writer,
