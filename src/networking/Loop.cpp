@@ -20,7 +20,7 @@
 
 #include "Loop.hpp"
 
-namespace networking {
+namespace net {
 	Loop*& Loop::ThisThreadLoop() {
 		static thread_local Loop* thread_loop = NULL;
 		return thread_loop;

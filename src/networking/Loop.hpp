@@ -24,7 +24,7 @@
 
 #include "Event.hpp"
 
-namespace networking {
+namespace net {
 	struct Loop {
 		struct us_loop_t* loop;
 		void * userData;

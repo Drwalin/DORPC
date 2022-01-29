@@ -21,7 +21,10 @@
 #include "Context.hpp"
 #include "Loop.hpp"
 
-namespace networking {
+#include <sstream>
+#include <iostream>
+
+namespace net {
 	Socket* Context::InternalConnect(const char* ip, int port) {
 		us_socket_t* us_socket = us_socket_context_connect(ssl, context, ip, port,
 				NULL, 0, sizeof(Socket));
@@ -146,6 +149,29 @@ namespace networking {
 		loop->contexts->insert(c);
 
 		return c;
+	}
+	
+	
+	
+	std::string TranslateIp(const char* ip, int ipLength) {
+		std::string str;
+		std::stringstream ss;
+		if(ipLength == 4) {
+			ss << std::dec;
+			for(int i=0; i<ipLength; ++i) {
+				if(i)
+					ss << '.';
+				ss << (unsigned)ip[i];
+			}
+		} else {
+			ss << std::hex;
+			for(int i=0; i<ipLength; i+=2) {
+				if(i)
+					ss << '.';
+				ss << (((unsigned)ip[i]) | (((unsigned)ip[i+1])<<8));
+			}
+		}
+		return str;
 	}
 }
 

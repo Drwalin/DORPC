@@ -25,7 +25,7 @@
 
 #include "Buffer.hpp"
 
-namespace networking {
+namespace net {
 	class Event : public concurrent::node<Event> {
 	public:
 

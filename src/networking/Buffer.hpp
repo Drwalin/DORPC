@@ -24,7 +24,7 @@
 
 #include <mpmc_pool.hpp>
 
-namespace networking {
+namespace net {
 	struct Buffer {
 
 		class Vector : public concurrent::node<Vector> {
@@ -107,8 +107,8 @@ namespace networking {
 }
 
 namespace std {
-	inline void swap(networking::Buffer& a, networking::Buffer& b) {
-		networking::Buffer::Vector* tmp = a.buffer;
+	inline void swap(net::Buffer& a, net::Buffer& b) {
+		net::Buffer::Vector* tmp = a.buffer;
 		a.buffer = b.buffer.load();
 		b.buffer = tmp;
 	}

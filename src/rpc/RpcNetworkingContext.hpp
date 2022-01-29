@@ -36,10 +36,9 @@
 namespace rpc {
 	class RpcNetworkingContext {
 	public:
-		
-		RpcNetworkingContext(std::function<void(networking::Socket*,
+		RpcNetworkingContext(std::function<void(net::Socket*,
 					RpcNetworkingContext*, bool, char*, int)> onOpenSocket,
-				std::function<void(networking::Socket*, RpcNetworkingContext*,
+				std::function<void(net::Socket*, RpcNetworkingContext*,
 					int, void*)> onCloseSocket,
 				const char* keyFileName, const char* certFileName,
 				const char* caFileName, const char* passphrase);
@@ -47,24 +46,26 @@ namespace rpc {
 		
 		void Listen(const char* ip, int port);
 		void WaitEnd();
+		void Connect(const char* ip, int port);
+		void Disconnect(const char* ip, int port);
+		void Disconnect(uint32_t nodeId);
 		
-		void Call(uint32_t nodeId, networking::Buffer&& message);
+		void Call(uint32_t nodeId, net::Buffer&& message);
 		
 		static RpcNetworkingContext*& Singleton();
 		static void InitSingleton(RpcNetworkingContext* context);
 		
-		static std::string TranslateIp(const char* ip, int ipLength);
-		
 	public:
 		
-		static void ExecuteSendEvent(networking::Event& event);
+		static void ExecuteSendEvent(net::Event& event);
 		
 	private:
 		
+		static void InternalDisconnect(net::Event& event);
+		static void InternalConnect(net::Event& event);
+		
 		struct Node {
-			static std::atomic<uint32_t> atomicNodeIds;
-			
-			networking::Socket* socket;
+			net::Socket* socket;
 			uint32_t nodeId;
 			std::string ip;
 			int port;
@@ -73,32 +74,41 @@ namespace rpc {
 		
 		Node* InternalGetNode(uint32_t nodeId);
 		Node* InternalGetNode(const std::string& ipString, int port);
-		Node* InternalGetNode(networking::Socket* socket);
-		void InternalSetNodeId(const std::string& ipString, uint32_t nodeId);
-		void InternalSetNodeSocket(Node* node, networking::Socket* socket);
+		Node* InternalGetNode(net::Socket* socket);
+		void InternalSetNodeId(Node* node, uint32_t nodeId);
+		void InternalSetIp(Node* node, const std::string& ipString, int port);
+		void InternalSetNodeSocket(Node* node, net::Socket* socket);
+		
+		
+		void InternalHandshakeClientSide(net::Socket* socket);
+		void InternalHandshakeServerSide(net::Socket* socket);
+		static void InternalHandshakeReceiveFromServer(net::Buffer& buffer);
+		static void InternalHandshakeReceiveFromClient(net::Buffer& buffer);
 		
 		
 		void Run();
 		
-		void OnMessage(networking::Buffer& buffer,
-				networking::Socket* socket);
-		void OnOpenSocket(networking::Socket* socket, bool isClient, char* ip,
+		void OnMessage(net::Buffer& buffer,
+				net::Socket* socket);
+		void OnOpenSocket(net::Socket* socket, bool isClient, char* ip,
 				int ipLength);
-		void OnCloseSocket(networking::Socket* socket, int ec, void* edata);
+		void OnCloseSocket(net::Socket* socket, int ec, void* edata);
 		
-		std::function<void(networking::Socket*, RpcNetworkingContext*, bool,
+		std::function<void(net::Socket*, RpcNetworkingContext*, bool,
 				char*, int)> onOpenSocket;
-		std::function<void(networking::Socket*, RpcNetworkingContext*, int,
+		std::function<void(net::Socket*, RpcNetworkingContext*, int,
 				void*)> onCloseSocket;
 		
-		networking::Loop* loop;
-		networking::Context* context;
+		net::Loop* loop;
+		net::Context* context;
 		
 		std::thread runningThread;
 		bool running;
 		std::unordered_map<uint32_t, Node*> nodes;
 		std::unordered_map<std::string, Node*> ipNodes;
-		std::unordered_map<networking::Socket*, Node*> socketNodes;
+		std::unordered_map<net::Socket*, Node*> socketNodes;
+		
+		std::atomic<uint32_t> atomicNodeIds;
 	};
 	
 	template<auto func>
@@ -121,6 +131,8 @@ namespace rpc {
 		struct Do : _Do<decltype(func)> {};
 	};
 }
+
+#define RPC(FUNC, ...) rpc::Call<FUNC>::Do::Run(__VA_ARGS__)
 
 #endif
 

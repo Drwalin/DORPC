@@ -26,7 +26,7 @@
 #include "Buffer.hpp"
 #include "Socket.hpp"
 
-namespace networking {
+namespace net {
 	struct Context {
 		struct us_socket_context_t* context;
 		struct Loop* loop;
@@ -66,6 +66,8 @@ namespace networking {
 				const char* keyFileName, const char* certFileName,
 				const char* caFileName, const char* passphrase);
 	};
+	
+	std::string TranslateIp(const char* ip, int ipLength);
 }
 
 #endif

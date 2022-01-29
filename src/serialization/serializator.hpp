@@ -64,11 +64,11 @@ namespace serialization {
 	class Writer {
 	public:
 		
-		inline void SetBuffer(networking::Buffer& buffer) {
+		inline void SetBuffer(net::Buffer& buffer) {
 			this->buffer = std::move(buffer);
 		}
 		
-		inline networking::Buffer& GetBuffer() {
+		inline net::Buffer& GetBuffer() {
 			return buffer;
 		}
 		
@@ -164,7 +164,7 @@ namespace serialization {
 			return *this;
 		}
 		
-		inline Writer& operator<<(const networking::Buffer& buffer) {
+		inline Writer& operator<<(const net::Buffer& buffer) {
 			this->buffer.Write(buffer.Data(), buffer.Size());
 			return *this;
 		}
@@ -184,7 +184,7 @@ namespace serialization {
 			return *this;
 		}
 		
-		networking::Buffer buffer;
+		net::Buffer buffer;
 	};
 	
 	
@@ -194,10 +194,10 @@ namespace serialization {
 	class Reader {
 	public:
 		
-		inline networking::Buffer& GetBuffer() { return buffer; }
+		inline net::Buffer& GetBuffer() { return buffer; }
 		inline int32_t GetReadBytes() { return read; }
 		
-		inline Reader(networking::Buffer& buffer) : buffer(buffer), read(0) {
+		inline Reader(net::Buffer& buffer) : buffer(buffer), read(0) {
 		}
 		
 		inline Reader& operator>>(int8_t &v) = delete;
@@ -317,7 +317,7 @@ namespace serialization {
 			return *this;
 		}
 		
-		inline Reader& operator>>(networking::Buffer& buffer) {
+		inline Reader& operator>>(net::Buffer& buffer) {
 			std::string_view view;
 			*this >> view;
 			buffer.Clear();
@@ -343,7 +343,7 @@ namespace serialization {
 			return *this;
 		}
 		
-		networking::Buffer& buffer;
+		net::Buffer& buffer;
 		int32_t read;
 	};
 	

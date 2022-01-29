@@ -40,6 +40,7 @@ $(LIBFILE): $(OBJECTS) uSockets/uSockets.a
 
 TESTS = tests/networking_test.exe tests/serialization_test.exe
 TESTS += tests/function_register_test.exe tests/function_register_2_test.exe
+# TESTS += tests/rpc_test.exe
 tests: $(TESTS)
 
 tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a

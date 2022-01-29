@@ -20,7 +20,7 @@
 
 #include <mpmc_pool.hpp>
 
-namespace networking {
+namespace net {
 	namespace impl {
 		concurrent::mpmc::pool<Buffer::Vector> bufferPool;
 	}
