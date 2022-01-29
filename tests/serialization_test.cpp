@@ -55,7 +55,6 @@ bool test_compare(const T& value) {
 	reader >> other;
 	++total_results;
 	if(value == other) {
-		printf(" Test %2i: OK\n", id);
 		++correct_results;
 		return true;
 	}
@@ -141,15 +140,19 @@ int main() {
 			{"fdsa fdfd asfda ", 1},
 			{"fsafd dasf ds fds", -2045432543},
 			{"", 54325},
-			{"fdsa fdasf das fdka fdjakl f;edka fjdksajfikajfkjlejkl hjfgio;aj", 456436},
+			{"fdsa fdasf das fdka fdjakl f;edka fjdksajfikajfkjlejkl hjfgio;aj",
+			456436},
 			{"fjdkasl; fdjkafl dj fkl;dasjfdkl ", 64},
 			{"jdfkasl;fdjk f;djakl;", 6463}});
 	
-	test_compare<VI, 13>({-3213,143,43,4,5435,34,5,65,67456,74,4,243,0,0,9,7,5,632,-12313,-2312,-423,432454545,-54325432});
+	test_compare<VI, 13>({-3213,143,43,4,5435,34,5,65,67456,74,4,243,0,0,9,7,5,
+			632,-12313,-2312,-423,432454545,-54325432});
 	
-	printf(" Tests %i/%i ... OK\n", correct_results, total_results);
 	if(correct_results != total_results) {
-		printf(" Tests %i/%i ... FAILED\n", total_results-correct_results, total_results);
+		printf(" Tests %i/%i ... FAILED\n\n", total_results-correct_results,
+				total_results);
+	} else {
+		printf(" Tests %i/%i ... OK\n\n", correct_results, total_results);
 	}
 	
 	return 0;

@@ -31,8 +31,8 @@ namespace networking {
 
 		concurrent::mpsc::queue<Event> *events;
 		std::set<Context*> *contexts;
-
-
+		
+		
 		void InternalDestructor();
 
 		void Run();

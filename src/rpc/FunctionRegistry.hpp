@@ -42,7 +42,7 @@ namespace rpc {
 		static bool Call(serialization::Reader& args,
 				serialization::Writer& returned);
 		
-		template<typename Func, Func func, typename... Args>
+		template<auto func, typename... Args>
 		static bool PrepareFunctionCall(serialization::Writer& writer,
 				Args... args);
 		
@@ -58,13 +58,13 @@ namespace rpc {
 #include "Function.hpp"
 
 namespace rpc {
-	template<typename Func, Func func, typename... Args>
+	template<auto func, typename... Args>
 	bool FunctionRegistry::PrepareFunctionCall(serialization::Writer& writer,
 			Args... args) {
-		FunctionBase* function = rpc::Function<Func, func>::Instance();
+		FunctionBase* function = rpc::Function<func>::Instance();
 		if(function) {
 			writer << function->GetId();
-			writer << rpc::FunctionTraits<Func>::MakeTuple(args...);
+			writer << rpc::FunctionTraits<decltype(func)>::MakeTuple(args...);
 			return true;
 		}
 		return false;
