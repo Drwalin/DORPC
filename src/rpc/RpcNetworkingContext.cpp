@@ -23,7 +23,11 @@
 #include <thread>
 #include <chrono>
 
+#include <libusockets.h>
+
 namespace rpc {
+	std::atomic<uint32_t> RpcNetworkingContext::Node::atomicNodeIds = 1;
+	
 	RpcNetworkingContext::RpcNetworkingContext(
 			std::function<void(networking::Socket*, RpcNetworkingContext*,
 				bool, char*, int)> onOpenSocket,
@@ -101,13 +105,34 @@ namespace rpc {
 	
 	void RpcNetworkingContext::Call(uint32_t nodeId,
 			networking::Buffer&& message) {
-
+		networking::Event* event = networking::Event::Allocate();
+		event->after = RpcNetworkingContext::ExecuteSendEvent;
+		event->buffer_or_ip = std::move(std::move(message));
+		event->data32 = nodeId;
+		event->type = networking::Event::Type::CUSTOM;
+		loop->PushEvent(event);
 	}
 	
-	void RpcNetworkingContext::ExecuteSendEvent(networking::Event* event) {
-		std::shared_ptr<Node> node = Singleton()->InternalGetNode(
-				(uint32_t)(uint64_t)event->socket);
-		node.
+	void RpcNetworkingContext::ExecuteSendEvent(networking::Event& event) {
+		Node* node = Singleton()->InternalGetNode(event.data32);
+		RpcNetworkingContext* context = Singleton();
+		if(!node->socket) {
+			if(node->connecting) {
+
+			} else if(node->ip == "") {
+				throw "Node has no IP address.";
+			} else {
+				node->socket = context->context->InternalConnect(
+						node->ip.c_str(), node->port);
+			}
+		}
+		if(node->socket) {
+			node->socket->InternalSend(event.buffer_or_ip);
+		} else {
+			networking::Event* pass = networking::Event::Allocate();
+			pass->MoveFrom(std::move(event));;
+			context->loop->DeferEvent(5, pass);
+		}
 	}
 	
 	
@@ -122,10 +147,20 @@ namespace rpc {
 			bool isClient, char* ip, int ipLength) {
 		std::string ipString = TranslateIp(ip, ipLength);
 		auto it = ipNodes.find(ipString);
+		Node* node = NULL;
 		if(it == ipNodes.end()) {
-			// TODO
+			node = new Node();
+			node->nodeId = ++Node::atomicNodeIds;
 		} else {
-			
+			node = it->second;
+		}
+		if(node) {
+			node->connecting = false;
+			node->socket = socket;
+			node->ip = ipString;
+			// TODO search by port
+			node->port = us_socket_local_port(socket->ssl, socket->socket);
+			socket->userData = node;
 		}
 	}
 	
@@ -133,9 +168,8 @@ namespace rpc {
 			int ec, void* edata) {
 		auto it = socketNodes.find(socket);
 		if(it != socketNodes.end()) {
-			uint32_t nodeId = it->second;
-			// TODO
-			
+			it->second->socket = NULL;
+			socketNodes.erase(it);
 		}
 	}
 

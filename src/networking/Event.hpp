@@ -34,6 +34,7 @@ namespace networking {
 		static void Free(Event* event);
 
 		enum Type {
+			CUSTOM,
 			NONE,
 
 			LISTEN_SOCKET_START,
@@ -49,6 +50,15 @@ namespace networking {
 			// ALLCAST,
 			// MULTICAST
 		};
+		
+		inline void MoveFrom(Event&& other) {
+			after = std::move(other.after);
+			data64 = std::move(other.data64);
+			listenSocket = std::move(other.listenSocket);
+			port = std::move(other.port);
+			type = std::move(other.type);
+			defer = std::move(other.defer);
+		}
 
 		std::function<void(Event&)> after;
 		Buffer buffer_or_ip;
@@ -56,10 +66,15 @@ namespace networking {
 			struct Socket* socket;
 			struct Context* context;
 			struct Loop* loop;
+			uint64_t data64;
+			uint32_t data32;
+			uint16_t data16;
+			uint8_t data8;
 		};
 		struct us_listen_socket_t* listenSocket;
 		int port;
 		Type type;
+		int defer;
 	};
 }
 

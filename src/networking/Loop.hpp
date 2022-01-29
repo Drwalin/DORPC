@@ -28,10 +28,13 @@ namespace networking {
 	struct Loop {
 		struct us_loop_t* loop;
 		void * userData;
+		bool running;
 
 		concurrent::mpsc::queue<Event> *events;
 		std::set<Context*> *contexts;
 		
+		
+		static Loop*& ThisThreadLoop();
 		
 		void InternalDestructor();
 
@@ -39,6 +42,7 @@ namespace networking {
 
 
 		void PushEvent(Event* event);
+		void DeferEvent(int defer, Event* event);
 		void PopEvents();
 
 		void OnWakeup();

@@ -55,23 +55,28 @@ namespace rpc {
 		
 		static std::string TranslateIp(const char* ip, int ipLength);
 		
+	public:
+		
+		static void ExecuteSendEvent(networking::Event& event);
+		
 	private:
 		
 		struct Node {
+			static std::atomic<uint32_t> atomicNodeIds;
+			
 			networking::Socket* socket;
 			uint32_t nodeId;
 			std::string ip;
+			int port;
+			bool connecting;
 		};
 		
-		std::shared_ptr<Node> InternalGetNode(uint32_t nodeId);
-		std::shared_ptr<Node> InternalGetNode(const std::string& ipString);
-		std::shared_ptr<Node> InternalGetNode(networking::Socket* socket);
+		Node* InternalGetNode(uint32_t nodeId);
+		Node* InternalGetNode(const std::string& ipString, int port);
+		Node* InternalGetNode(networking::Socket* socket);
 		void InternalSetNodeId(const std::string& ipString, uint32_t nodeId);
-		void InternalSetNodeSocket(std::shared_ptr<Node> node,
-				networking::Socket* socket);
+		void InternalSetNodeSocket(Node* node, networking::Socket* socket);
 		
-		
-		static void ExecuteSendEvent(networking::Event* event);
 		
 		void Run();
 		
@@ -91,9 +96,9 @@ namespace rpc {
 		
 		std::thread runningThread;
 		bool running;
-		std::unordered_map<uint32_t, std::shared_ptr<Node>> nodes;
-		std::unordered_map<std::string, std::shared_ptr<Node>> ipNodes;
-		std::unordered_map<networking::Socket*, std::shared_ptr<Node>> socketNodes;
+		std::unordered_map<uint32_t, Node*> nodes;
+		std::unordered_map<std::string, Node*> ipNodes;
+		std::unordered_map<networking::Socket*, Node*> socketNodes;
 	};
 	
 	template<auto func>
@@ -103,11 +108,13 @@ namespace rpc {
 
 		template<typename Ret, typename...Args>
 		struct _Do<Ret(*)(Args...)> {
-			inline static bool Run(Args... args) {
-				serialization::Writer preparedArgs, returned;
+			inline static bool Run(uint32_t nodeId, Args... args) {
+				serialization::Writer preparedArgs;
 				if(rpc::FunctionRegistry::PrepareFunctionCall<func, Args...>(
 							preparedArgs, args...) == false)
 					return false;
+				RpcNetworkingContext::Singleton()->Call(nodeId,
+						std::move(preparedArgs.GetBuffer()));
 			}
 		};
 		

@@ -98,14 +98,16 @@ namespace networking {
 	}
 
 	void Socket::Send(Buffer& sendBuffer) {
-		loop->PushEvent(
-				new Event {
-				.after = NULL,
-				.buffer_or_ip=std::move(sendBuffer),
-				.socket=this,
-				.listenSocket = NULL,
-				.type=Event::SOCKET_SEND
-				});
+		Event* event = Event::Allocate();
+		event->after = NULL;
+		event->buffer_or_ip = std::move(sendBuffer);
+		event->socket = this;
+		event->listenSocket = NULL;
+		event->type = Event::SOCKET_SEND;
+		if(loop == Loop::ThisThreadLoop())
+			event->Run();
+		else
+			loop->PushEvent(event);
 	}
 
 	void Socket::InternalSend(Buffer& buffer) {
