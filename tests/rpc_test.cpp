@@ -1,60 +1,67 @@
 
-#include <networking/Context.hpp>
-#include <networking/Loop.hpp>
-#include <networking/Socket.hpp>
+#include <iostream>
+#include <ostream>
 
-#include <thread>
-#include <cstring>
-#include <string_view>
+#include <rpc/FunctionRegistry.hpp>
+#include <rpc/Function.hpp>
+#include <rpc/RpcNetworkingContext.hpp>
 
-const uint16_t ports[2] = {12345, 12346};
+int valid=0, invalid=0, total=0;
 
-std::atomic<int> received_counter = 0;
-
-void process(int portOpen, int portOther, int id) {
-	networking::Loop *loop = networking::Loop::Make();
-	networking::Context* context = networking::Context::Make(loop, [=](
-				networking::Socket*socket, int a, char* b, int c) {
-			
-				networking::Buffer buffer;
-				char str[1024];
-				sprintf(str, "Hello from %i to %i, has been sent", portOpen,
-						portOther);
-				buffer.Write(str, strlen(str)+1);
-				socket->Send(buffer);
-			},
-			[=](networking::Buffer& buffer, networking::Socket* socket) {
-				std::string_view v((char*)buffer.Data(), buffer.Size()-1);
-				bool valid = v.starts_with("Hello from ")
-						&& v.ends_with(", has been sent");
-				printf(" Received (on %i of size %i) [%c;%c]: '%s': %s\n",
-						portOpen, buffer.Size(), v[0], v[v.size()-1],
-						buffer.Data(), valid?"valid":"ERROR!!!");
-				if(valid == false) {
-					std::this_thread::yield();
-					exit(1);
-				} else {
-					received_counter++;
-					if(received_counter == 4) {
-						printf(" done\n");
-						printf(" no errors: 4/4 ... OK\n");
-						exit(0);
-					}
-				}
-			}, "cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
-	
-	context->StartListening("127.0.0.1", portOpen);
-	networking::Socket* socket_ = context->InternalConnect("127.0.0.1",
-			portOther);
-	socket_->userData = NULL;
-	loop->Run();
+void validate(int id, bool result) {
+	if(id) {
+		if(result) {
+			valid++;
+		} else {
+			invalid++;
+			printf(" test %i ... FAILED\n", id);
+		}
+		++total;
+	}
 }
 
+int functionA(int id, int res, int32_t a, float b, long long c) {
+	int ret = c + (int64_t)(a*b) + 13;
+	validate(id, ret == res);
+	return ret;
+}
+
+std::string functionB(int id, std::string res, std::string a,
+		std::vector<uint32_t> b, std::vector<std::string> c) {
+	a = std::string("<begin>") + a;
+	for(int i : b) {
+		a += ".." + c[i%c.size()];
+	}
+	a += "<end>";
+	validate(id, a == res);
+	return a;
+}
+
+#define TEST(F, NODE, ID, R, ...) RPC(F, NODE, ID, F(NODE, 0, R, __VA_ARGS__), \
+		__VA_ARGS__)
+
 int main() {
-	std::thread thread = std::thread(process, ports[0], ports[1], 0);
-	process(ports[1], ports[0], 1);
+	REGISTER_FUNCTION(functionA);
+	REGISTER_FUNCTION(functionB);
 	
-	thread.join();
-	return 0;
+	TEST(functionA, 1, 1, 0, 'a', 'b', 'c');
+	TEST(functionA, 1, 2, 0, 'd', 'e', 'f');
+	TEST(functionA, 1, 3, 0, 'g', 'h', 'i');
+	TEST(functionA, 1, 4, 0, 'j', 'k', 'l');
+	TEST(functionA, 1, 5, 0, 'm', 'n', 'o');
+	TEST(functionA, 1, 6, 0, 'r', 'q', 'p');
+	TEST(functionB, 1, 7, "", "AA:", {1, 1, 0}, {"__0", "__1"});
+	TEST(functionB, 1, 8, "", "_B:", {1, 1, 0}, {"__3", "__2"});
+	TEST(functionB, 1, 9, "", "C_:", {1, 2, 0}, {"__4", "__5", "_6"});
+	TEST(functionB, 1, 10, "", "++:", {1, 2, 0}, {"_9", "_10", "_11"});
+	
+	
+	
+	if(invalid)
+		printf(" tests %i/%i ... FAILED\n\n", invalid, total);
+	else
+		printf(" tests %i/%i ... OK\n\n", valid, total);
+	
+	return invalid;
 }
 
