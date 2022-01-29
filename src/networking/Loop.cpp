@@ -21,6 +21,11 @@
 #include "Loop.hpp"
 
 namespace networking {
+	Loop*& Loop::ThisThreadLoop() {
+		static thread_local Loop* thread_loop = NULL;
+		return thread_loop;
+	}
+	
 	void Loop::InternalDestructor() {
 		delete events;
 		events = NULL;
@@ -30,22 +35,45 @@ namespace networking {
 	}
 
 	void Loop::Run() {
+		if(ThisThreadLoop() != NULL)
+			throw "Cannot run loop on thread with already running loop.";
+		running = true;
+		ThisThreadLoop() = this;
 		us_loop_run(loop);
+		ThisThreadLoop() = NULL;
+		running = false;
 	}
 
 	void Loop::PushEvent(Event* event) {
+		event->defer = 0;
+		events->push(event);
+		us_wakeup_loop(loop);
+	}
+
+	void Loop::DeferEvent(int defer, Event* event) {
+		event->defer = defer;
 		events->push(event);
 		us_wakeup_loop(loop);
 	}
 
 	void Loop::PopEvents() {
 		Event* event;
+		std::vector<Event*> deferedEvents;
 		while((event = events->pop()) != NULL) {
-			if(event)
-				event->Run();
-			else
-				break;
+			if(event->defer > 0) {
+				deferedEvents.emplace_back(event);
+			} else {
+				if(event)
+					event->Run();
+				else
+					break;
+				Event::Free(event);
+			}
 		}
+		for(size_t i=0; i<deferedEvents.size(); ++i) {
+			events->push(deferedEvents[i]);
+		}
+		deferedEvents.clear();
 	}
 
 	void Loop::OnWakeup() {
@@ -78,6 +106,7 @@ namespace networking {
 		Loop* loop = (Loop*)us_loop_ext(us_loop);
 		loop->loop = us_loop;
 		loop->userData = NULL;
+		loop->running = false;
 		loop->events = new concurrent::mpsc::queue<Event>();
 		loop->contexts = new std::set<Context*>();
 		return loop;
