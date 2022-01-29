@@ -32,6 +32,7 @@ namespace networking {
 		struct Loop* loop;
 		void* userData;
 		std::function<void(Socket*, int, char*, int)> *onNewSocket;
+		std::function<void(Socket*, int, void*)> *onCloseSocket;
 		std::function<void(Buffer&, Socket*)> *onReceiveMessage;
 		int ssl;
 		std::set<Socket*>* sockets;
@@ -60,6 +61,7 @@ namespace networking {
 
 		static Context* Make(Loop* loop,
 				std::function<void(Socket*, int, char*, int)> onNewSocket,
+				std::function<void(Socket*, int, void*)> onCloseSocket,
 				std::function<void(Buffer&, Socket*)> onReceiveMessage,
 				const char* keyFileName, const char* certFileName,
 				const char* caFileName, const char* passphrase);

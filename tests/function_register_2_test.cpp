@@ -17,7 +17,7 @@ struct Call {
 	struct _Do<Ret(*)(Args...)> {
 		inline static bool Run(Args... args) {
 			serialization::Writer preparedArgs, returned;
-			if(rpc::FunctionRegistry::PrepareFunctionCall<decltype(func), func, Args...>(
+			if(rpc::FunctionRegistry::PrepareFunctionCall<func, Args...>(
 						preparedArgs, args...) == false)
 				return false;
 			serialization::Reader argsReader(preparedArgs.GetBuffer());
@@ -34,7 +34,6 @@ void validate(int id, bool result) {
 	if(id) {
 		if(result) {
 			valid++;
-			printf(" test %i ... OK\n", id);
 		} else {
 			invalid++;
 			printf(" test %i ... FAILED\n", id);
@@ -77,9 +76,10 @@ int main() {
 	TEST(functionB, 9, "", "C_:", {1, 2, 0}, {"__4", "__5", "_6"});
 	TEST(functionB, 10, "", "++:", {1, 2, 0}, {"_9", "_10", "_11"});
 	
-	printf(" tests %i/%i ... OK\n", valid, total);
 	if(invalid)
-		printf(" tests %i/%i ... FAILED\n", invalid, total);
+		printf(" tests %i/%i ... FAILED\n\n", invalid, total);
+	else
+		printf(" tests %i/%i ... OK\n\n", valid, total);
 	
 	return invalid;
 }

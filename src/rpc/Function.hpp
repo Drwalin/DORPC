@@ -39,7 +39,7 @@ namespace rpc {
 		}
 	};
 	
-	template<typename Type, Type ptr>
+	template<auto ptr>
 	class Function : public FunctionBase {
 	public:
 		
@@ -56,7 +56,7 @@ namespace rpc {
 		}
 		
 		inline static void Register() {
-			FunctionRegistry::Add(new Function<Type, ptr>());
+			FunctionRegistry::Add(new Function<ptr>());
 		}
 		
 		inline static FunctionBase* Instance() {
@@ -66,14 +66,14 @@ namespace rpc {
 		}
 		
 		virtual void Execute(serialization::Reader& reader) override {
-			typename FunctionTraits<Type>::tuple args;
+			typename FunctionTraits<decltype(ptr)>::tuple args;
 			reader >> args;
 			std::apply(ptr, args);
 		}
 		
 		virtual void ExecuteWithReturn(serialization::Reader& reader,
 				serialization::Writer& writerRet) override {
-			typename FunctionTraits<Type>::tuple args;
+			typename FunctionTraits<decltype(ptr)>::tuple args;
 			reader >> args;
 			writerRet << std::apply(ptr, args);
 		}
@@ -83,14 +83,14 @@ namespace rpc {
 		Function() = default;
 	};
 	
-	template<typename Type, Type func>
+	template<auto func>
 	inline void RegisterFunction() {
-		Function<Type, func>::Register();
+		Function<func>::Register();
 	}
 }
 
-#define FUNCTION(__F) rpc::Function<decltype(__F), __F>::Instance()
-#define REGISTER_FUNCTION(__F) rpc::Function<decltype(&__F), __F>::Register()
+#define FUNCTION(__F) rpc::Function<__F>::Instance()
+#define REGISTER_FUNCTION(__F) rpc::Function<__F>::Register()
 
 #endif
 

@@ -86,6 +86,8 @@ namespace networking {
 			int code, void* reason) {
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnClose(code, reason);
+		if(s->context->onCloseSocket && *s->context->onCloseSocket)
+			(*s->context->onCloseSocket)(s, code, reason);
 		return socket;
 	}
 
@@ -103,6 +105,7 @@ namespace networking {
 
 	Context* Context::Make(Loop* loop,
 			std::function<void(Socket*, int, char*, int)> onNewSocket,
+			std::function<void(Socket*, int, void*)> onCloseSocket,
 			std::function<void(Buffer&, Socket*)> onReceiveMessage,
 			const char* keyFileName, const char* certFileName,
 			const char* caFileName, const char* passphrase) {
@@ -137,6 +140,7 @@ namespace networking {
 		c->userData = NULL;
 		c->onNewSocket = new decltype(onNewSocket)(onNewSocket);
 		c->onReceiveMessage = new decltype(onReceiveMessage)(onReceiveMessage);
+		c->onCloseSocket = new decltype(onCloseSocket)(onCloseSocket);
 		c->ssl = 1;
 
 		loop->contexts->insert(c);
