@@ -26,21 +26,20 @@
 #include <libusockets.h>
 
 namespace rpc {
-	std::atomic<uint32_t> RpcNetworkingContext::Node::atomicNodeIds = 1;
 	
 	RpcNetworkingContext::RpcNetworkingContext(
-			std::function<void(networking::Socket*, RpcNetworkingContext*,
+			std::function<void(net::Socket*, RpcNetworkingContext*,
 				bool, char*, int)> onOpenSocket,
-			std::function<void(networking::Socket*, RpcNetworkingContext*,
+			std::function<void(net::Socket*, RpcNetworkingContext*,
 				int, void*)> onCloseSocket,
 			const char* keyFileName, const char* certFileName,
 			const char* caFileName, const char* passphrase) {
 		this->onOpenSocket = onOpenSocket;
 		this->onCloseSocket = onCloseSocket;
 		running = false;
-		loop = networking::Loop::Make();
-		context = networking::Context::Make(loop,
-				[](networking::Socket*socket, int isClient, char* ip,
+		loop = net::Loop::Make();
+		context = net::Context::Make(loop,
+				[](net::Socket*socket, int isClient, char* ip,
 					int ipLength) {
 					RpcNetworkingContext* context = (RpcNetworkingContext*)
 						socket->context->userData;
@@ -49,7 +48,7 @@ namespace rpc {
 							return context->onOpenSocket(socket, context,
 									isClient, ip, ipLength);
 				},
-				[](networking::Socket* socket, int ec, void* edata) {
+				[](net::Socket* socket, int ec, void* edata) {
 					RpcNetworkingContext* context = (RpcNetworkingContext*)
 						socket->context->userData;
 					if(context)
@@ -57,7 +56,7 @@ namespace rpc {
 							return context->onCloseSocket(socket, context, ec,
 									edata);
 				},
-				[](networking::Buffer& buffer, networking::Socket* socket) {
+				[](net::Buffer& buffer, net::Socket* socket) {
 					RpcNetworkingContext* context = (RpcNetworkingContext*)
 						socket->context->userData;
 					if(context)
@@ -104,16 +103,16 @@ namespace rpc {
 	
 	
 	void RpcNetworkingContext::Call(uint32_t nodeId,
-			networking::Buffer&& message) {
-		networking::Event* event = networking::Event::Allocate();
+			net::Buffer&& message) {
+		net::Event* event = net::Event::Allocate();
 		event->after = RpcNetworkingContext::ExecuteSendEvent;
 		event->buffer_or_ip = std::move(std::move(message));
 		event->data32 = nodeId;
-		event->type = networking::Event::Type::CUSTOM;
+		event->type = net::Event::Type::CUSTOM;
 		loop->PushEvent(event);
 	}
 	
-	void RpcNetworkingContext::ExecuteSendEvent(networking::Event& event) {
+	void RpcNetworkingContext::ExecuteSendEvent(net::Event& event) {
 		Node* node = Singleton()->InternalGetNode(event.data32);
 		RpcNetworkingContext* context = Singleton();
 		if(!node->socket) {
@@ -129,28 +128,26 @@ namespace rpc {
 		if(node->socket) {
 			node->socket->InternalSend(event.buffer_or_ip);
 		} else {
-			networking::Event* pass = networking::Event::Allocate();
-			pass->MoveFrom(std::move(event));;
+			net::Event* pass = net::Event::Allocate();
+			pass->MoveFrom(std::move(event));
 			context->loop->DeferEvent(5, pass);
 		}
 	}
 	
 	
 	
-	void RpcNetworkingContext::OnMessage(networking::Buffer& buffer,
-			networking::Socket* socket) {
+	void RpcNetworkingContext::OnMessage(net::Buffer& buffer,
+			net::Socket* socket) {
 		serialization::Reader reader(buffer);
 		FunctionRegistry::Call(reader);
 	}
 	
-	void RpcNetworkingContext::OnOpenSocket(networking::Socket* socket,
+	void RpcNetworkingContext::OnOpenSocket(net::Socket* socket,
 			bool isClient, char* ip, int ipLength) {
-		std::string ipString = TranslateIp(ip, ipLength);
-		auto it = ipNodes.find(ipString);
-		Node* node = NULL;
+		Node* node = InternalGetNode();
 		if(it == ipNodes.end()) {
 			node = new Node();
-			node->nodeId = ++Node::atomicNodeIds;
+			node->nodeId = ++(Singleton()->atomicNodeIds);
 		} else {
 			node = it->second;
 		}
@@ -164,37 +161,13 @@ namespace rpc {
 		}
 	}
 	
-	void RpcNetworkingContext::OnCloseSocket(networking::Socket* socket,
+	void RpcNetworkingContext::OnCloseSocket(net::Socket* socket,
 			int ec, void* edata) {
 		auto it = socketNodes.find(socket);
 		if(it != socketNodes.end()) {
 			it->second->socket = NULL;
 			socketNodes.erase(it);
 		}
-	}
-
-
-
-	std::string RpcNetworkingContext::TranslateIp(const char* ip,
-			int ipLength) {
-		std::string str;
-		std::stringstream ss;
-		if(ipLength == 4) {
-			ss << std::dec;
-			for(int i=0; i<ipLength; ++i) {
-				if(i)
-					ss << '.';
-				ss << (unsigned)ip[i];
-			}
-		} else {
-			ss << std::hex;
-			for(int i=0; i<ipLength; i+=2) {
-				if(i)
-					ss << '.';
-				ss << (((unsigned)ip[i]) | (((unsigned)ip[i+1])<<8));
-			}
-		}
-		return str;
 	}
 }
 

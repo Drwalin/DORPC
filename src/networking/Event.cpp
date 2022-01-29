@@ -27,7 +27,7 @@
 
 #include "Event.hpp"
 
-namespace networking {
+namespace net {
 	namespace impl {
 		concurrent::mpmc::pool<Event> eventPool;
 	}
@@ -59,11 +59,11 @@ namespace networking {
 			after(*this);
 	}
 
-	Event* Allocate() {
+	Event* Event::Allocate() {
 		return impl::eventPool.acquire();
 	}
 
-	void Free(Event* event) {
+	void Event::Free(Event* event) {
 		if(event)
 			impl::eventPool.release(event);
 	}

@@ -2,10 +2,10 @@
 #include <iostream>
 #include <ostream>
 
-namespace networking {
+namespace net {
 	class Buffer;
 }
-std::ostream& operator<<(std::ostream& s, networking::Buffer& buffer);
+std::ostream& operator<<(std::ostream& s, net::Buffer& buffer);
 
 #include <rpc/FunctionRegistry.hpp>
 #include <rpc/Function.hpp>
@@ -50,7 +50,7 @@ std::ostream& operator<<(std::ostream& s, std::map<K, V> v) {
 	return s;
 }
 
-std::ostream& operator<<(std::ostream& s, networking::Buffer& buffer) {
+std::ostream& operator<<(std::ostream& s, net::Buffer& buffer) {
 	s << " buffer [" << buffer.Size() << "]<<";
 	for(int32_t i=0; i<buffer.Size(); ++i) {
 		if(i!=0)

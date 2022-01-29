@@ -25,11 +25,12 @@
 
 #include "Buffer.hpp"
 
-namespace networking {
+namespace net {
 	struct Socket {
 		struct us_socket_t* socket;
 		struct Context* context;
 		struct Loop* loop;
+		std::string* remoteIp;
 		int ssl;
 		void* userData;
 

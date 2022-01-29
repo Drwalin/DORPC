@@ -29,7 +29,7 @@
 
 #include "Socket.hpp"
 
-namespace networking {
+namespace net {
 	void Socket::Init(struct us_socket_t* socket, int ssl) {
 		this->socket = socket;
 		this->ssl = ssl;
@@ -43,6 +43,7 @@ namespace networking {
 	}
 
 	void Socket::OnOpen(char* ip, int ipLength) {
+		remoteIp = new std::string(TranslateIp(ip, ipLength));
 		context->sockets->insert(this);
 		bytes_to_receive = 0;
 		received_bytes_of_size = 0;
@@ -54,6 +55,9 @@ namespace networking {
 	}
 
 	void Socket::OnClose(int code, void* reason) {
+		if(remoteIp)
+			delete remoteIp;
+		remoteIp = NULL;
 		buffer.Destroy();
 		context->sockets->erase(this);
 	}
