@@ -35,7 +35,8 @@ namespace net {
 	void Event::Run() {
 		switch(type) {
 		case LISTEN_SOCKET_START:
-			context->StartListening((const char*)buffer_or_ip.Data(), port);
+			context->InternalStartListening((const char*)buffer_or_ip.Data(),
+					port);
 			break;
 		case LISTEN_SOCKET_STOP:
 			context->listenSockets->erase(listenSocket);
@@ -50,6 +51,19 @@ namespace net {
 			break;
 		case SOCKET_SEND:
 			socket->InternalSend(buffer_or_ip);
+			break;
+		
+		case ALLCAST_LOOP:
+			for(Context* c : *loop->contexts) {
+				for(Socket* s : *c->sockets) {
+					s->InternalSend(buffer_or_ip);
+				}
+			}
+			break;
+		case ALLCAST_CONTEXT:
+			for(Socket* s : *context->sockets) {
+				s->InternalSend(buffer_or_ip);
+			}
 			break;
 
 		default:

@@ -47,7 +47,8 @@ namespace net {
 
 			// LOOP_CLOSE,
 
-			// ALLCAST,
+			ALLCAST_LOOP,
+			ALLCAST_CONTEXT,
 			// MULTICAST
 		};
 		
@@ -66,6 +67,8 @@ namespace net {
 			struct Socket* socket;
 			struct Context* context;
 			struct Loop* loop;
+		};
+		union {
 			uint64_t data64;
 			uint32_t data32;
 			uint16_t data16;
@@ -73,8 +76,8 @@ namespace net {
 		};
 		struct us_listen_socket_t* listenSocket;
 		int port;
-		Type type;
 		int defer;
+		Type type;
 	};
 }
 

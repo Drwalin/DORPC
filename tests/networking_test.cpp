@@ -14,8 +14,8 @@ std::atomic<int> received_counter = 0;
 void process(int portOpen, int portOther, int id) {
 	net::Loop *loop = net::Loop::Make();
 	net::Context* context = net::Context::Make(loop, [=](
-				net::Socket*socket,
-				int a, char* b, int c) {
+				net::Socket* socket,
+				bool isClient, std::string ip) {
 				net::Buffer buffer;
 				char str[1024];
 				sprintf(str, "Hello from %i to %i, has been sent", portOpen,
@@ -38,17 +38,22 @@ void process(int portOpen, int portOther, int id) {
 					received_counter++;
 					if(received_counter == 4) {
 						printf(" tests 4/4 ... OK\n\n");
+						fflush(stdout);
 						exit(0);
 					}
 				}
 			},
 			"cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
 	
-	context->StartListening("127.0.0.1", portOpen);
-	net::Socket* socket_ = context->InternalConnect("127.0.0.1",
-			portOther);
-	socket_->userData = NULL;
-	loop->Run();
+	context->InternalStartListening("127.0.0.1", portOpen);
+	context->Connect("127.0.0.1", portOther);
+	try {
+		loop->Run();
+	} catch (...) {
+		printf(" EXCEPTION... FAILED\n\n");
+		fflush(stdout);
+		exit(0);
+	}
 }
 
 int main() {
