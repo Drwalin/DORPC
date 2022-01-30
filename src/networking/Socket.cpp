@@ -36,10 +36,8 @@ namespace net {
 		context = (Context*)us_socket_context_ext(ssl,
 				us_socket_context(ssl, socket));
 		loop = context->loop;
-	}
-
-	void Socket::Destroy() {
-		us_socket_shutdown(ssl, socket);
+		userData = NULL;
+		remoteIp = NULL;
 	}
 
 	void Socket::OnOpen(char* ip, int ipLength) {
@@ -126,7 +124,12 @@ namespace net {
 	}
 
 	void Socket::InternalClose() {
-		us_socket_close(ssl, socket, 0, NULL);
+		// TODO does it work
+		if(us_socket_is_established(ssl, socket)) {
+			us_socket_close(ssl, socket, 0, NULL);
+		} else {
+			us_socket_close_connecting(ssl, socket);
+		}
 	}
 }
 

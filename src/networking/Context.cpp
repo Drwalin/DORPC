@@ -23,8 +23,36 @@
 
 #include <sstream>
 #include <iostream>
+#include <functional>
+#include <cstring>
 
 namespace net {
+	void Context::StartListening(const char* ip, int port) {
+		Event* event = Event::Allocate();
+		event->buffer_or_ip.Write(ip, strlen(ip)+1);
+		event->port = port;
+		event->context = this;
+		event->type = Event::LISTEN_SOCKET_START;
+		loop->PushEvent(event);
+	}
+
+	struct us_listen_socket_t* Context::InternalStartListening(const char* host,
+			int port) {
+		us_listen_socket_t* socket = us_socket_context_listen(ssl, context,
+				host, port, 0, sizeof(Socket));
+		listenSockets->insert(socket);
+		return socket;
+	}
+	
+	void Context::Connect(const char* ip, int port) {
+		Event* event = Event::Allocate();
+		event->buffer_or_ip.Write(ip, strlen(ip)+1);
+		event->port = port;
+		event->context = this;
+		event->type = Event::SOCKET_CONNECT;
+		loop->PushEvent(event);
+	}
+	
 	Socket* Context::InternalConnect(const char* ip, int port) {
 		us_socket_t* us_socket = us_socket_context_connect(ssl, context, ip, port,
 				NULL, 0, sizeof(Socket));
@@ -39,18 +67,17 @@ namespace net {
 		if(onReceiveMessage)
 			delete onReceiveMessage;
 		onReceiveMessage = NULL;
-		// TODO: kill all sockets of this context
-		delete sockets;
-		sockets = NULL;
+		for(auto* s : *listenSockets) {
+			// TODO stop listening -> kill listen socket ?? does it work
+			us_listen_socket_close(ssl, s);
+		}
 		delete listenSockets;
 		listenSockets = NULL;
-	}
-
-	struct us_listen_socket_t* Context::StartListening(const char* host, int port) {
-		us_listen_socket_t* socket = us_socket_context_listen(ssl, context, host,
-				port, 0, sizeof(Socket));
-		listenSockets->insert(socket);
-		return socket;
+		for(auto* s : *sockets) {
+			s->InternalClose();
+		}
+		delete sockets;
+		sockets = NULL;
 	}
 
 	struct us_socket_t* Context::InternalOnDataSsl(struct us_socket_t* socket,
@@ -74,7 +101,7 @@ namespace net {
 		s->OnOpen(ip, ipLength);
 
 		if(s->context)
-			s->context->onNewSocket->operator()(s, isClient, ip, ipLength);
+			s->context->onNewSocket->operator()(s, isClient, *s->remoteIp);
 
 		return socket;
 	}
@@ -107,7 +134,7 @@ namespace net {
 	}
 
 	Context* Context::Make(Loop* loop,
-			std::function<void(Socket*, int, char*, int)> onNewSocket,
+			std::function<void(Socket*, bool, std::string)> onNewSocket,
 			std::function<void(Socket*, int, void*)> onCloseSocket,
 			std::function<void(Buffer&, Socket*)> onReceiveMessage,
 			const char* keyFileName, const char* certFileName,

@@ -32,7 +32,13 @@ namespace net {
 		struct Loop* loop;
 		std::string* remoteIp;
 		int ssl;
-		void* userData;
+		union {
+			void* userData;
+			uint64_t userData64;
+			uint32_t userData32;
+			uint16_t userData16;
+			uint8_t userData8;
+		};
 
 		Buffer buffer;
 		int32_t received_bytes_of_size;
@@ -44,7 +50,6 @@ namespace net {
 
 
 		void Init(struct us_socket_t* socket, int ssl);
-		void Destroy();
 
 
 		void Send(Buffer& sendBuffer);

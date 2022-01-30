@@ -30,6 +30,7 @@ OBJECTS = bin/networking/Buffer.o bin/networking/Socket.o
 OBJECTS += bin/networking/Context.o bin/networking/Loop.o
 OBJECTS += bin/networking/Event.o
 OBJECTS += bin/rpc/FunctionBase.o bin/rpc/FunctionRegistry.o
+OBJECTS += bin/rpc/Context.o
 
 all: $(LIBFILE) tests
 
@@ -40,7 +41,7 @@ $(LIBFILE): $(OBJECTS) uSockets/uSockets.a
 
 TESTS = tests/networking_test.exe tests/serialization_test.exe
 TESTS += tests/function_register_test.exe tests/function_register_2_test.exe
-# TESTS += tests/rpc_test.exe
+TESTS += tests/rpc_1_test.exe
 tests: $(TESTS)
 
 tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a
@@ -51,6 +52,9 @@ run: $(TESTS)
 	@echo ""
 	@echo Testing
 	@echo ""
+	tests/rpc_1_test.exe server &
+	tests/rpc_1_test.exe client &
+	wait
 	tests/function_register_2_test.exe
 	tests/function_register_test.exe
 	tests/serialization_test.exe
