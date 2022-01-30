@@ -16,8 +16,8 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
-#ifndef DORPC_RPC_RPC_NETWORKING_CONTEXT_HPP
-#define DORPC_RPC_RPC_NETWORKING_CONTEXT_HPP
+#ifndef DORPC_RPC_CONTEXT_HPP
+#define DORPC_RPC_CONTEXT_HPP
 
 #include <unordered_map>
 #include <functional>
@@ -32,17 +32,18 @@
 #include "../networking/Context.hpp"
 #include "../networking/Loop.hpp"
 #include "../networking/Socket.hpp"
+#include "NodeRepository.hpp"
 
 namespace rpc {
-	class RpcNetworkingContext {
+	class Context {
 	public:
-		RpcNetworkingContext(std::function<void(net::Socket*,
-					RpcNetworkingContext*, bool, char*, int)> onOpenSocket,
-				std::function<void(net::Socket*, RpcNetworkingContext*,
+		Context(std::function<void(net::Socket*,
+					Context*, bool, std::string)> onOpenSocket,
+				std::function<void(net::Socket*, Context*,
 					int, void*)> onCloseSocket,
 				const char* keyFileName, const char* certFileName,
 				const char* caFileName, const char* passphrase);
-		~RpcNetworkingContext();
+		~Context();
 		
 		void Listen(const char* ip, int port);
 		void WaitEnd();
@@ -52,8 +53,8 @@ namespace rpc {
 		
 		void Call(uint32_t nodeId, net::Buffer&& message);
 		
-		static RpcNetworkingContext*& Singleton();
-		static void InitSingleton(RpcNetworkingContext* context);
+		static Context*& Singleton();
+		static void InitSingleton(Context* context);
 		
 	public:
 		
@@ -61,42 +62,22 @@ namespace rpc {
 		
 	private:
 		
+		void NodeNotFound(uint32_t nodeId);
+		
 		static void InternalDisconnect(net::Event& event);
 		static void InternalConnect(net::Event& event);
-		
-		struct Node {
-			net::Socket* socket;
-			uint32_t nodeId;
-			std::string ip;
-			int port;
-			bool connecting;
-		};
-		
-		Node* InternalGetNode(uint32_t nodeId);
-		Node* InternalGetNode(const std::string& ipString, int port);
-		Node* InternalGetNode(net::Socket* socket);
-		void InternalSetNodeId(Node* node, uint32_t nodeId);
-		void InternalSetIp(Node* node, const std::string& ipString, int port);
-		void InternalSetNodeSocket(Node* node, net::Socket* socket);
-		
-		
-		void InternalHandshakeClientSide(net::Socket* socket);
-		void InternalHandshakeServerSide(net::Socket* socket);
-		static void InternalHandshakeReceiveFromServer(net::Buffer& buffer);
-		static void InternalHandshakeReceiveFromClient(net::Buffer& buffer);
 		
 		
 		void Run();
 		
 		void OnMessage(net::Buffer& buffer,
 				net::Socket* socket);
-		void OnOpenSocket(net::Socket* socket, bool isClient, char* ip,
-				int ipLength);
+		void OnOpenSocket(net::Socket* socket, bool isClient, std::string ip);
 		void OnCloseSocket(net::Socket* socket, int ec, void* edata);
 		
-		std::function<void(net::Socket*, RpcNetworkingContext*, bool,
-				char*, int)> onOpenSocket;
-		std::function<void(net::Socket*, RpcNetworkingContext*, int,
+		std::function<void(net::Socket*, Context*, bool, std::string)>
+			onOpenSocket;
+		std::function<void(net::Socket*, Context*, int,
 				void*)> onCloseSocket;
 		
 		net::Loop* loop;
@@ -104,11 +85,8 @@ namespace rpc {
 		
 		std::thread runningThread;
 		bool running;
-		std::unordered_map<uint32_t, Node*> nodes;
-		std::unordered_map<std::string, Node*> ipNodes;
-		std::unordered_map<net::Socket*, Node*> socketNodes;
 		
-		std::atomic<uint32_t> atomicNodeIds;
+		NodeRepository nodeRepository;
 	};
 	
 	template<auto func>
@@ -123,7 +101,7 @@ namespace rpc {
 				if(rpc::FunctionRegistry::PrepareFunctionCall<func, Args...>(
 							preparedArgs, args...) == false)
 					return false;
-				RpcNetworkingContext::Singleton()->Call(nodeId,
+				Context::Singleton()->Call(nodeId,
 						std::move(preparedArgs.GetBuffer()));
 			}
 		};
