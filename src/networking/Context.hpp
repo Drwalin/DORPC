@@ -31,7 +31,7 @@ namespace net {
 		struct us_socket_context_t* context;
 		struct Loop* loop;
 		void* userData;
-		std::function<void(Socket*, int, char*, int)> *onNewSocket;
+		std::function<void(Socket*, bool, std::string)> *onNewSocket;
 		std::function<void(Socket*, int, void*)> *onCloseSocket;
 		std::function<void(Buffer&, Socket*)> *onReceiveMessage;
 		int ssl;
@@ -60,7 +60,7 @@ namespace net {
 				struct us_socket_t* socket);
 
 		static Context* Make(Loop* loop,
-				std::function<void(Socket*, int, char*, int)> onNewSocket,
+				std::function<void(Socket*, bool, std::string)> onNewSocket,
 				std::function<void(Socket*, int, void*)> onCloseSocket,
 				std::function<void(Buffer&, Socket*)> onReceiveMessage,
 				const char* keyFileName, const char* certFileName,

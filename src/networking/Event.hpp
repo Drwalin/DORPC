@@ -47,7 +47,8 @@ namespace net {
 
 			// LOOP_CLOSE,
 
-			// ALLCAST,
+			ALLCAST_LOOP,
+			ALLCAST_CONTEXT,
 			// MULTICAST
 		};
 		

@@ -74,7 +74,7 @@ namespace net {
 		s->OnOpen(ip, ipLength);
 
 		if(s->context)
-			s->context->onNewSocket->operator()(s, isClient, ip, ipLength);
+			s->context->onNewSocket->operator()(s, isClient, *s->remoteIp);
 
 		return socket;
 	}
@@ -107,7 +107,7 @@ namespace net {
 	}
 
 	Context* Context::Make(Loop* loop,
-			std::function<void(Socket*, int, char*, int)> onNewSocket,
+			std::function<void(Socket*, bool, std::string)> onNewSocket,
 			std::function<void(Socket*, int, void*)> onCloseSocket,
 			std::function<void(Buffer&, Socket*)> onReceiveMessage,
 			const char* keyFileName, const char* certFileName,

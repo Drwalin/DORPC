@@ -15,7 +15,7 @@ void process(int portOpen, int portOther, int id) {
 	net::Loop *loop = net::Loop::Make();
 	net::Context* context = net::Context::Make(loop, [=](
 				net::Socket*socket,
-				int a, char* b, int c) {
+				bool isClient, std::string ip) {
 				net::Buffer buffer;
 				char str[1024];
 				sprintf(str, "Hello from %i to %i, has been sent", portOpen,

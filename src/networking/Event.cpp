@@ -51,6 +51,19 @@ namespace net {
 		case SOCKET_SEND:
 			socket->InternalSend(buffer_or_ip);
 			break;
+		
+		case ALLCAST_LOOP:
+			for(Context* c : *loop->contexts) {
+				for(Socket* s : *c->sockets) {
+					s->InternalSend(buffer_or_ip);
+				}
+			}
+			break;
+		case ALLCAST_CONTEXT:
+			for(Socket* s : *context->sockets) {
+				s->InternalSend(buffer_or_ip);
+			}
+			break;
 
 		default:
 			break;
