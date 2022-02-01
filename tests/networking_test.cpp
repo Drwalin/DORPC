@@ -11,6 +11,8 @@ const uint16_t ports[2] = {12345, 12346};
 
 std::atomic<int> received_counter = 0;
 
+#include <Debug.hpp>
+
 void process(int portOpen, int portOther, int id) {
 	net::Loop *loop = net::Loop::Make();
 	net::Context* context = net::Context::Make(loop, [=](
@@ -29,6 +31,7 @@ void process(int portOpen, int portOther, int id) {
 				std::string_view v((char*)buffer.Data(), buffer.Size()-1);
 				bool valid = v.starts_with("Hello from ")
 						&& v.ends_with(", has been sent");
+				DEBUG("");
 				if(valid == false) {
 					std::this_thread::yield();
 					printf(" tests ... FAILED\n\n");
@@ -36,7 +39,7 @@ void process(int portOpen, int portOther, int id) {
 					exit(1);
 				} else {
 					received_counter++;
-					if(received_counter == 4) {
+					if(received_counter == 2) {
 						printf(" tests 4/4 ... OK\n\n");
 						fflush(stdout);
 						exit(0);
@@ -45,8 +48,10 @@ void process(int portOpen, int portOther, int id) {
 			},
 			"cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
 	
-	context->InternalStartListening("127.0.0.1", portOpen);
-	context->Connect("127.0.0.1", portOther);
+	//if(id == 0)
+		context->InternalStartListening("127.0.0.1", portOpen);
+	//else
+		context->Connect("127.0.0.1", portOther);
 	try {
 		loop->Run();
 	} catch (...) {
@@ -56,7 +61,7 @@ void process(int portOpen, int portOther, int id) {
 	}
 }
 
-int main() {
+int main(int argc, char** argv) {
 	std::thread thread = std::thread(process, ports[0], ports[1], 0);
 	process(ports[1], ports[0], 1);
 	
