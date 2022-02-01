@@ -45,6 +45,7 @@ namespace rpc {
 				const char* caFileName, const char* passphrase);
 		~Context();
 		
+		void AsyncRun();
 		void Run();
 		void Listen(const char* ip, int port);
 		void InternalListen(const char* ip, int port);
@@ -58,6 +59,8 @@ namespace rpc {
 		void Disconnect(uint32_t socketId);
 		
 		void Call(uint32_t socketId, net::Buffer&& message);
+		
+		inline bool IsRunning() const { return running; }
 		
 	private:
 		
@@ -78,14 +81,16 @@ namespace rpc {
 				void*)> onCloseSocket;
 		std::function<void(net::Event& event)> onFailedSend;
 		
-		net::Loop* loop;
-		net::Context* context;
-		
 		std::thread runningThread;
 		bool running;
 		
 		std::unordered_map<uint32_t, net::Socket*> sockets;
 		uint32_t socketIdCounter;
+		
+	public:
+		
+		net::Loop* loop;
+		net::Context* context;
 	};
 	
 	template<auto func>
@@ -102,6 +107,7 @@ namespace rpc {
 					return false;
 				Context::Singleton()->Call(socketId,
 						std::move(preparedArgs.GetBuffer()));
+				return true;
 			}
 		};
 		

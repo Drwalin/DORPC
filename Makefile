@@ -26,15 +26,16 @@ LIBS += -lpthread -lssl -lcrypto
 
 INCLUDE = -I./src/ -I./Concurrent -I./uSockets/include
 CXXFLAGS += $(INCLUDE)
-OBJECTS = bin/networking/Buffer.o bin/networking/Socket.o
+OBJECTS = bin/Debug.o
+OBJECTS += bin/networking/Buffer.o bin/networking/Socket.o
 OBJECTS += bin/networking/Context.o bin/networking/Loop.o
 OBJECTS += bin/networking/Event.o
 OBJECTS += bin/rpc/FunctionBase.o bin/rpc/FunctionRegistry.o
 OBJECTS += bin/rpc/Context.o
 
-all: $(LIBFILE) tests
+all: tests $(LIBFILE)
 
-$(LIBFILE): $(OBJECTS) uSockets/uSockets.a
+$(LIBFILE): $(OBJECTS)
 	$(AR) rvs $@ $^
 
 # tests:
@@ -44,7 +45,7 @@ TESTS += tests/function_register_test.exe tests/function_register_2_test.exe
 TESTS += tests/rpc_1_test.exe
 tests: $(TESTS)
 
-tests/%.exe: tests/%.cpp $(LIBFILE) uSockets/uSockets.a
+tests/%.exe: bin/tests/%.o $(LIBFILE) uSockets/uSockets.a
 	$(CXX) -o $@ $^ $(CXXFLAGS)
 
 run: $(TESTS)
@@ -52,12 +53,14 @@ run: $(TESTS)
 	@echo ""
 	@echo Testing
 	@echo ""
-	tests/rpc_1_test.exe server &
-	tests/rpc_1_test.exe client &
-	wait
+	tests/rpc_1_test.exe server
+	@echo ""
 	tests/function_register_2_test.exe
+	@echo ""
 	tests/function_register_test.exe
+	@echo ""
 	tests/serialization_test.exe
+	@echo ""
 	tests/networking_test.exe
 
 # uSockets:
@@ -67,8 +70,10 @@ uSockets/uSockets.a:
 
 
 # objects:
-bin/networking/%.o: src/networking/%.cpp src/networking/%.hpp
+bin/tests/%.o: tests/%.cpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
+#bin/networking/%.o: src/networking/%.cpp src/networking/%.hpp
+#	$(CXX) -c -o $@ $< $(CXXFLAGS)
 bin/%.o: src/%.cpp src/%.hpp
 	$(CXX) -c -o $@ $< $(CXXFLAGS)
 

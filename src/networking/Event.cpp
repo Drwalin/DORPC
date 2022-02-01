@@ -27,33 +27,42 @@
 
 #include "Event.hpp"
 
+#include "../Debug.hpp"
+
 namespace net {
 	namespace impl {
 		concurrent::mpmc::pool<Event> eventPool;
 	}
 
 	void Event::Run() {
+		DEBUG("");
 		switch(type) {
 		case LISTEN_SOCKET_START:
+		DEBUG("");
 			context->InternalStartListening((const char*)buffer_or_ip.Data(),
 					port);
 			break;
 		case LISTEN_SOCKET_STOP:
+		DEBUG("");
 			context->listenSockets->erase(listenSocket);
 			us_listen_socket_close(context->ssl, listenSocket);
 			break;
 
 		case SOCKET_CONNECT:
+		DEBUG("");
 			context->InternalConnect((char*)buffer_or_ip.Data(), port);
 			break;
 		case SOCKET_CLOSE:
+		DEBUG("");
 			socket->InternalClose();
 			break;
 		case SOCKET_SEND:
+		DEBUG("");
 			socket->InternalSend(buffer_or_ip);
 			break;
 		
 		case ALLCAST_LOOP:
+		DEBUG("");
 			for(Context* c : *loop->contexts) {
 				for(Socket* s : *c->sockets) {
 					s->InternalSend(buffer_or_ip);
@@ -61,23 +70,29 @@ namespace net {
 			}
 			break;
 		case ALLCAST_CONTEXT:
+		DEBUG("");
 			for(Socket* s : *context->sockets) {
 				s->InternalSend(buffer_or_ip);
 			}
 			break;
 
 		default:
+		DEBUG("");
 			break;
 		}
-		if(after)
+		if(after) {
+		DEBUG("");
 			after(*this);
+		}
 	}
 
 	Event* Event::Allocate() {
+		DEBUG("");
 		return impl::eventPool.acquire();
 	}
 
 	void Event::Free(Event* event) {
+		DEBUG("");
 		if(event)
 			impl::eventPool.release(event);
 	}

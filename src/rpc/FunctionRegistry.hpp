@@ -16,6 +16,9 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "FunctionBase.hpp"
+#include "../serialization/serializator.hpp"
+
 #ifndef DORPC_RPC_FUNCTION_REGISTRY_HPP
 #define DORPC_RPC_FUNCTION_REGISTRY_HPP
 
@@ -23,9 +26,6 @@
 #include <functional>
 #include <vector>
 #include <cinttypes>
-
-#include "FunctionBase.hpp"
-#include "../serialization/serializator.hpp"
 
 namespace rpc {
 	class FunctionRegistry {

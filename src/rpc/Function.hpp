@@ -16,13 +16,13 @@
  *  along with this program.  If not, see <https://www.gnu.org/licenses/>.
  */
 
+#include "FunctionBase.hpp"
+#include "FunctionRegistry.hpp"
+
 #ifndef DORPC_RPC_FUNCTION_HPP
 #define DORPC_RPC_FUNCTION_HPP
 
 #include <unordered_map>
-
-#include "FunctionBase.hpp"
-#include "FunctionRegistry.hpp"
 
 namespace rpc {
 	

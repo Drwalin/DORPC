@@ -29,8 +29,11 @@
 
 #include "Socket.hpp"
 
+#include "../Debug.hpp"
+
 namespace net {
 	void Socket::Init(struct us_socket_t* socket, int ssl) {
+		DEBUG("");
 		this->socket = socket;
 		this->ssl = ssl;
 		context = (Context*)us_socket_context_ext(ssl,
@@ -42,17 +45,20 @@ namespace net {
 
 	void Socket::OnOpen(char* ip, int ipLength) {
 		remoteIp = new std::string(TranslateIp(ip, ipLength));
+		DEBUG("ip = %s[%i]:%i", remoteIp->c_str(), ipLength, us_socket_local_port(ssl, socket));
 		context->sockets->insert(this);
 		bytes_to_receive = 0;
 		received_bytes_of_size = 0;
 	}
 
 	void Socket::OnEnd() {
+		DEBUG("");
 		buffer.Destroy();
 		context->sockets->erase(this);
 	}
 
 	void Socket::OnClose(int code, void* reason) {
+		DEBUG("");
 		if(remoteIp)
 			delete remoteIp;
 		remoteIp = NULL;
@@ -61,16 +67,21 @@ namespace net {
 	}
 
 	void Socket::OnTimeout() {
+		DEBUG("");
 		// TODO
 	}
 
 	void Socket::OnWritable() {
+		DEBUG("");
 		// TODO
 	}
 
 	void Socket::OnData(uint8_t* data, int length) {
+		DEBUG("");
 		while(length) {
+			DEBUG("");
 			if(received_bytes_of_size < 4) {
+			DEBUG("");
 				int bytes_to_copy = std::min(4-received_bytes_of_size, length);
 				memcpy(received_size+received_bytes_of_size, data,
 						bytes_to_copy);
@@ -78,6 +89,7 @@ namespace net {
 				data += bytes_to_copy;
 				received_bytes_of_size += bytes_to_copy;
 				if(received_bytes_of_size == 4) {
+			DEBUG("");
 					bytes_to_receive =
 						(int(received_size[0]))
 						| (int(received_size[1]) << 8)
@@ -85,21 +97,27 @@ namespace net {
 						| (int(received_size[3]) << 24);
 				}
 			} else {
+			DEBUG("");
 				int32_t bytes_to_copy = std::min(bytes_to_receive, length);
 				buffer.Write(data, bytes_to_copy);
 				data += bytes_to_copy;
 				length -= bytes_to_copy;
 				bytes_to_receive -= bytes_to_copy;
 				if(bytes_to_receive == 0) {
-					if(onReceiveMessage)
+			DEBUG("");
+					if(onReceiveMessage) {
+			DEBUG("");
 						(*onReceiveMessage)(buffer, this);
+					}
 					buffer.Clear();
+					received_bytes_of_size = 0;
 				}
 			}
 		}
 	}
 
 	void Socket::Send(Buffer& sendBuffer) {
+		DEBUG("");
 		Event* event = Event::Allocate();
 		event->after = NULL;
 		event->buffer_or_ip = std::move(sendBuffer);
@@ -113,6 +131,7 @@ namespace net {
 	}
 
 	void Socket::InternalSend(Buffer& buffer) {
+		DEBUG("");
 		int32_t length = buffer.Size();
 		uint8_t b[4];
 		b[0] = (length)&0xFF;
@@ -124,6 +143,7 @@ namespace net {
 	}
 
 	void Socket::InternalClose() {
+		DEBUG("");
 		// TODO does it work
 		if(us_socket_is_established(ssl, socket)) {
 			us_socket_close(ssl, socket, 0, NULL);

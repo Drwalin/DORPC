@@ -25,8 +25,9 @@
 
 #include <libusockets.h>
 
+#include "../Debug.hpp"
+
 namespace rpc {
-	
 	Context::Context(
 			std::function<void(net::Socket*, Context*,
 				bool, std::string)> onOpenSocket,
@@ -44,10 +45,8 @@ namespace rpc {
 				InternalOnCloseSocket, InternalOnMessage,
 				keyFileName, certFileName, caFileName, passphrase);
 		context->userData = this;
-		runningThread = std::thread([](Context* context) {
-				context->Run();
-			}, this);
 		socketIdCounter = 1;
+		InitSingleton(this);
 	}
 	
 	Context::~Context() {
@@ -55,9 +54,23 @@ namespace rpc {
 	}
 	
 	void Context::Run() {
-		running = true;
-		loop->Run();
-		running = false;
+		DEBUG("");
+		if(running) {
+			WaitEnd();
+		} else {
+			running = true;
+			loop->Run();
+			running = false;
+		}
+		DEBUG("Run end");
+	}
+	
+	void Context::AsyncRun() {
+		runningThread = std::thread([](Context* c) {
+				if(c->IsRunning())
+					return;
+				c->Run();
+			}, this);
 	}
 	
 	void Context::Listen(const char* ip, int port) {
@@ -70,7 +83,7 @@ namespace rpc {
 	
 	void Context::WaitEnd() {
 		while(running) {
-			std::this_thread::yield();
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
 		}
 	}
 	
@@ -143,17 +156,23 @@ namespace rpc {
 	
 	void Context::InternalOnOpenSocket(net::Socket* socket, bool isClient,
 			std::string ip) {
+		DEBUG("");
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
+		DEBUG("");
 			context->AssignSocketIdToSocket(socket);
-			if(context->onOpenSocket)
+		DEBUG("");
+			if(context->onOpenSocket) {
+		DEBUG("");
 				return context->onOpenSocket(socket, context,
 						isClient, ip);
+			}
 		}
 	}
 	
 	void Context::InternalOnCloseSocket(net::Socket* socket, int ec,
 			void* edata) {
+		DEBUG("");
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
 			if(context->onCloseSocket)
@@ -165,6 +184,7 @@ namespace rpc {
 	}
 	
 	void Context::InternalOnMessage(net::Buffer& buffer, net::Socket* socket) {
+		DEBUG("");
 		Context* context = (Context*)
 			socket->context->userData;
 		if(context) {
@@ -183,6 +203,8 @@ namespace rpc {
 			}
 			socket->userData32 = id;
 			sockets[id] = socket;
+			DEBUG("Assigned: %u", id);
+			return id;
 		}
 	}
 }
