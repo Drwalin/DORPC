@@ -31,7 +31,6 @@ void process(int portOpen, int portOther, int id) {
 				std::string_view v((char*)buffer.Data(), buffer.Size()-1);
 				bool valid = v.starts_with("Hello from ")
 						&& v.ends_with(", has been sent");
-				DEBUG("");
 				if(valid == false) {
 					std::this_thread::yield();
 					printf(" tests ... FAILED\n\n");
@@ -39,7 +38,7 @@ void process(int portOpen, int portOther, int id) {
 					exit(1);
 				} else {
 					received_counter++;
-					if(received_counter == 2) {
+					if(received_counter == 4) {
 						printf(" tests 4/4 ... OK\n\n");
 						fflush(stdout);
 						exit(0);

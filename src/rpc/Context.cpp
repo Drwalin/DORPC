@@ -54,7 +54,6 @@ namespace rpc {
 	}
 	
 	void Context::Run() {
-		DEBUG("");
 		if(running) {
 			WaitEnd();
 		} else {
@@ -62,7 +61,6 @@ namespace rpc {
 			loop->Run();
 			running = false;
 		}
-		DEBUG("Run end");
 	}
 	
 	void Context::AsyncRun() {
@@ -156,14 +154,10 @@ namespace rpc {
 	
 	void Context::InternalOnOpenSocket(net::Socket* socket, bool isClient,
 			std::string ip) {
-		DEBUG("");
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
-		DEBUG("");
 			context->AssignSocketIdToSocket(socket);
-		DEBUG("");
 			if(context->onOpenSocket) {
-		DEBUG("");
 				return context->onOpenSocket(socket, context,
 						isClient, ip);
 			}
@@ -172,7 +166,6 @@ namespace rpc {
 	
 	void Context::InternalOnCloseSocket(net::Socket* socket, int ec,
 			void* edata) {
-		DEBUG("");
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
 			if(context->onCloseSocket)
@@ -184,7 +177,6 @@ namespace rpc {
 	}
 	
 	void Context::InternalOnMessage(net::Buffer& buffer, net::Socket* socket) {
-		DEBUG("");
 		Context* context = (Context*)
 			socket->context->userData;
 		if(context) {
@@ -203,7 +195,6 @@ namespace rpc {
 			}
 			socket->userData32 = id;
 			sockets[id] = socket;
-			DEBUG("Assigned: %u", id);
 			return id;
 		}
 	}
