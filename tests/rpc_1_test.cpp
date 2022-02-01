@@ -24,7 +24,6 @@ void validate(int id, bool result) {
 }
 
 int functionA(int id, int res, int32_t a, float b, long long c) {
-	DEBUG("from A");
 	int ret = c + (int64_t)(a*b) + 13;
 	validate(id, ret == res);
 	return ret;
@@ -32,7 +31,6 @@ int functionA(int id, int res, int32_t a, float b, long long c) {
 
 std::string functionB(int id, std::string res, std::string a,
 		std::vector<uint32_t> b, std::vector<std::string> c) {
-	DEBUG("from B");
 	a = std::string("<begin>") + a;
 	for(int i : b) {
 		a += ".." + c[i%c.size()];
@@ -55,7 +53,7 @@ struct us_listen_socket_t* listenSocket = NULL;
 int PORT = 32515;
 
 int main(int argc, char** argv) {
-	ARGV = argv;
+	ARGV[1] = (char*)"server";
 	
 	srand(time(NULL));
 	
@@ -67,7 +65,6 @@ int main(int argc, char** argv) {
 	
 	rpc::Context context([](net::Socket* socket, rpc::Context* context,
 			bool isClient, std::string ip) {
-				printf(" onOpenSocket\n");
 				uint32_t id = socket->userData32;
 				TEST(functionA, id, 1, 0, 'a', 'b', 'c');
 				TEST(functionA, id, 2, 0, 'd', 'e', 'f');
@@ -81,63 +78,40 @@ int main(int argc, char** argv) {
 				TEST(functionB, id, 10, "", "++:", {1, 2, 0}, {"_9", "_10", "_11"});
 			},
 			[](net::Socket* socket, rpc::Context* context, int, void*) {
-				printf(" onCloseSocket\n");
 				socket->InternalClose();
-				DEBUG("EXIT");
 				exit(1);
 			},
 			[](net::Event&e){
-				DEBUG(" error event: %lu, Type(%i)", e.data64, (int)e.type);
 			},
 			"cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
 	
-	printf(" --- Listening\n\n");
 	context.InternalListen("127.0.0.1", PORT);
-	printf(" --- Connecting \n\n");
-	context.Connect("127.0.0.1", PORT+1);
-	
-	printf(" --- Listening\n\n");
-	context.InternalListen("127.0.0.1", PORT+1);
-	printf(" --- Connecting \n\n");
 	context.Connect("127.0.0.1", PORT);
-	
-//	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//	context.Connect("127.0.0.1", PORT);
-//	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//	context.Connect("127.0.0.1", PORT);
-//	std::this_thread::sleep_for(std::chrono::milliseconds(100));
-//	context.Connect("127.0.0.1", PORT);
 	
 	context.AsyncRun();
 	
 	std::this_thread::sleep_for(std::chrono::milliseconds(100));
 	auto end = std::chrono::high_resolution_clock::now() +
 		std::chrono::seconds(20);
-	while(total != 10 && end>std::chrono::high_resolution_clock::now()
+	while(total != 20 && end>std::chrono::high_resolution_clock::now()
 			&& context.IsRunning()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}
 	
-	fflush(stderr);
-	fflush(stdout);
-	printf("\n");
-	
 	if(invalid+valid != 20) {
-		printf(" tests [%s] valid %i + invalid %i / total %i\n\n", argv[1],
-				valid.load(), invalid.load(), total.load());
+		printf(" tests valid %i + invalid %i / total %i\n\n", valid.load(),
+				invalid.load(), total.load());
 	} else {
-		if(invalid)
-			printf(" tests [%s] %i/%i ... FAILED\n\n", argv[1], invalid.load(),
-					total.load());
-		else
-			printf(" tests [%s] %i/%i ... OK\n\n", argv[1], valid.load(),
-					total.load());
+		if(invalid) {
+			printf(" tests %i/%i ... FAILED\n\n", invalid.load(), total.load());
+		} else {
+			printf(" tests %i/%i ... OK\n\n", valid.load(), total.load());
+		}
 	}
 	fflush(stderr);
 	fflush(stdout);
 	
 	
-	DEBUG("Legal EXIT");
 	exit(invalid);
 	
 	return invalid;

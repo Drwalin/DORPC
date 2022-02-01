@@ -30,7 +30,6 @@
 
 namespace net {
 	void Context::StartListening(const char* ip, int port) {
-		DEBUG("");
 		Event* event = Event::Allocate();
 		event->buffer_or_ip.Write(ip, strlen(ip)+1);
 		event->port = port;
@@ -43,13 +42,11 @@ namespace net {
 			int port) {
 		us_listen_socket_t* socket = us_socket_context_listen(ssl, context,
 				host, port, 0, sizeof(Socket));
-		DEBUG("");
 		listenSockets->insert(socket);
 		return socket;
 	}
 	
 	void Context::Connect(const char* ip, int port) {
-		DEBUG("");
 		Event* event = Event::Allocate();
 		event->buffer_or_ip.Write(ip, strlen(ip)+1);
 		event->port = port;
@@ -61,12 +58,10 @@ namespace net {
 	Socket* Context::InternalConnect(const char* ip, int port) {
 		us_socket_t* us_socket = us_socket_context_connect(ssl, context, ip,
 				port, NULL, 0, sizeof(Socket));
-		DEBUG("[%s]:%i", ip, port);
 		return (Socket*)us_socket_ext(ssl, us_socket);
 	}
 
 	void Context::Destructor() {
-		DEBUG("");
 		loop->contexts->erase(this);
 		if(onNewSocket)
 			delete onNewSocket;
@@ -89,7 +84,6 @@ namespace net {
 
 	struct us_socket_t* Context::InternalOnDataSsl(struct us_socket_t* socket,
 			char* data, int length) {
-		DEBUG("");
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnData((uint8_t*)data, length);
 		return socket;
@@ -97,7 +91,6 @@ namespace net {
 
 	struct us_socket_t* Context::InternalOnOpenSsl(struct us_socket_t* socket,
 			int isClient, char* ip, int ipLength) {
-		DEBUG((isClient?"Client" : "Server"));
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->ssl = 1;
 		s->socket = socket;
@@ -116,7 +109,6 @@ namespace net {
 	}
 
 	struct us_socket_t* Context::InternalOnEndSsl(struct us_socket_t* socket) {
-		DEBUG("");
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnEnd();
 		return socket;
@@ -124,7 +116,6 @@ namespace net {
 
 	struct us_socket_t* Context::InternalOnCloseSsl(struct us_socket_t* socket,
 			int code, void* reason) {
-		DEBUG("");
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnClose(code, reason);
 		if(s->context->onCloseSocket && *s->context->onCloseSocket)
@@ -134,7 +125,6 @@ namespace net {
 
 	struct us_socket_t* Context::InternalOnTimeoutSsl(
 			struct us_socket_t* socket) {
-		DEBUG("");
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnTimeout();
 		return socket;
@@ -142,7 +132,6 @@ namespace net {
 
 	struct us_socket_t* Context::InternalOnWritableSsl(
 			struct us_socket_t* socket) {
-		DEBUG("");
 		Socket* s = (Socket*)us_socket_ext(1, socket);
 		s->OnWritable();
 		return socket;
@@ -154,14 +143,12 @@ namespace net {
 			std::function<void(Buffer&, Socket*)> onReceiveMessage,
 			const char* keyFileName, const char* certFileName,
 			const char* caFileName, const char* passphrase) {
-		DEBUG("");
 		if(keyFileName == NULL || certFileName == NULL || caFileName == NULL) {
 			fprintf(stderr,
 					" ERROR: Currently no-ssl tcp sockets are not suported!\n");
 			fflush(stderr);
 			return NULL;
 		}
-		DEBUG("");
 		struct us_socket_context_options_t options;
 		options.cert_file_name = certFileName;
 		options.key_file_name = keyFileName;

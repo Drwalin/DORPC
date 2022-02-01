@@ -53,7 +53,7 @@ run: $(TESTS)
 	@echo ""
 	@echo Testing
 	@echo ""
-	tests/rpc_1_test.exe server
+	tests/rpc_1_test.exe
 	@echo ""
 	tests/function_register_2_test.exe
 	@echo ""

@@ -30,15 +30,30 @@ namespace net {
 		class Vector : public concurrent::node<Vector> {
 		public:
 			std::vector<uint8_t> vector;
-			inline void clear() {vector.clear();}
-			inline int32_t size() {return vector.size();}
-			inline uint8_t& operator[](int32_t id) {return vector[id];}
-			inline void resize(int32_t size) {vector.resize(size);}
+			inline void clear() {
+				vector.clear();
+			}
+			inline int32_t size() {
+				return vector.size();
+			}
+			inline const uint8_t operator[](int32_t id) const {
+				return vector[id];
+			}
+			inline uint8_t& operator[](int32_t id) {
+				if(vector.size()<=(size_t)id)
+					vector.resize(id+1);
+				return vector[id];
+			}
+			inline void resize(int32_t size) {
+				vector.resize(size);
+			}
 			inline void append(const void* buffer, int32_t bytes) {
 				vector.insert(vector.end(), (const uint8_t*)buffer,
 						(const uint8_t*)buffer+bytes);
 			}
-			inline uint8_t* data() {return vector.data();}
+			inline uint8_t* data() {
+				return vector.data();
+			}
 		};
 
 		std::atomic<Buffer::Vector*> buffer;
@@ -60,6 +75,7 @@ namespace net {
 
 		inline void Destroy() {
 			Free(buffer);
+			buffer = NULL;
 		}
 
 		inline void Assure() {
@@ -84,20 +100,21 @@ namespace net {
 				return 0;
 			return buffer.load()->size();
 		}
-		inline uint8_t* Data() const {
+		
+		inline const uint8_t*const Data() const {
 			if(buffer.load())
 				return &(buffer.load()->operator[](0));
 			return NULL;
 		}
+		
 		inline uint8_t* Data() {
 			Assure();
 			return &(buffer.load()->operator[](0));
 		}
+		
 		inline uint8_t& operator[](int32_t id) {
 			Assure();
-			if(buffer.load()->size() <= id)
-				buffer.load()->resize(buffer.load()->size()+1);
-			return Data()[id];
+			return buffer.load()->operator[](id);
 		}
 
 	private:

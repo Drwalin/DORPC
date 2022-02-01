@@ -30,13 +30,13 @@ namespace net {
 	}
 
 	Buffer::Buffer(Buffer&& other) {
-		Free(buffer);
 		buffer = other.buffer.load();
 		other.buffer = NULL;
 	}
 
 	Buffer::~Buffer() {
 		Free(buffer);
+		buffer = NULL;
 	}
 
 	Buffer& Buffer::operator=(Buffer&& other) {
