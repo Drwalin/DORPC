@@ -20,12 +20,14 @@
 #define DORPC_NETWORKING_EVENT_HPP
 
 #include <functional>
+#include <memory>
 
 #include <concurrent.hpp>
 
 #include "Buffer.hpp"
 
 namespace net {
+	
 	class Event : public concurrent::node<Event> {
 	public:
 
@@ -54,8 +56,11 @@ namespace net {
 		
 		inline void MoveFrom(Event&& other) {
 			after = std::move(other.after);
-			data64 = std::move(other.data64);
+			socket = other.socket;
+			context = other.context;
+			loop = other.loop;
 			listenSocket = std::move(other.listenSocket);
+			data64 = std::move(other.data64);
 			port = std::move(other.port);
 			type = std::move(other.type);
 			defer = std::move(other.defer);
@@ -63,18 +68,16 @@ namespace net {
 
 		std::function<void(Event&)> after;
 		Buffer buffer_or_ip;
-		union {
-			struct Socket* socket;
-			struct Context* context;
-			struct Loop* loop;
-		};
+		std::shared_ptr<class Socket> socket;
+		std::shared_ptr<class Context> context;
+		std::shared_ptr<class Loop> loop;
+		struct us_listen_socket_t* listenSocket;
 		union {
 			uint64_t data64;
 			uint32_t data32;
 			uint16_t data16;
 			uint8_t data8;
 		};
-		struct us_listen_socket_t* listenSocket;
 		int port;
 		int defer;
 		Type type;

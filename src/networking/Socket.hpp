@@ -21,16 +21,24 @@
 
 #include <cinttypes>
 #include <functional>
+#include <memory>
 #include <libusockets.h>
 
 #include "Buffer.hpp"
 
 namespace net {
-	struct Socket {
+	class Socket {
+	private:
+		Socket() = default;
+	public:
+		
+		~Socket();
+		
 		struct us_socket_t* socket;
-		struct Context* context;
-		struct Loop* loop;
-		std::string* remoteIp;
+		std::weak_ptr<Socket> self;
+		std::shared_ptr<class Context> context;
+		std::shared_ptr<class Loop> loop;
+		std::string remoteIp;
 		int ssl;
 		union {
 			void* userData;
@@ -44,8 +52,6 @@ namespace net {
 		int32_t received_bytes_of_size;
 		uint8_t received_size[4];
 		int32_t bytes_to_receive;
-
-		std::function<void(Buffer&, Socket*)> *onReceiveMessage;
 
 
 
@@ -64,6 +70,8 @@ namespace net {
 
 		void InternalSend(Buffer& buffer);
 		void InternalClose();
+		
+		friend class net::Context;
 	};
 }
 

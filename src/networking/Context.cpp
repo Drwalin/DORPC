@@ -29,11 +29,30 @@
 #include "../Debug.hpp"
 
 namespace net {
+	Context::~Context() {
+		loop->contexts.erase(self.lock());
+		CloseAll();
+		delete *(std::shared_ptr<Context>**)us_socket_context_ext(ssl, context);
+		*(std::shared_ptr<Context>**)us_socket_context_ext(ssl, context) = NULL;
+	}
+	
+	void Context::CloseAll() {
+		for(auto* s : listenSockets) {
+			// TODO stop listening -> kill listen socket ?? does it work
+			us_listen_socket_close(ssl, s);
+		}
+		listenSockets.clear();
+		for(std::shared_ptr<Socket> s : sockets) {
+			s->InternalClose();
+		}
+		sockets.clear();
+	}
+	
 	void Context::StartListening(const char* ip, int port) {
 		Event* event = Event::Allocate();
 		event->buffer_or_ip.Write(ip, strlen(ip)+1);
 		event->port = port;
-		event->context = this;
+		event->context = self.lock();
 		event->type = Event::LISTEN_SOCKET_START;
 		loop->PushEvent(event);
 	}
@@ -42,7 +61,7 @@ namespace net {
 			int port) {
 		us_listen_socket_t* socket = us_socket_context_listen(ssl, context,
 				host, port, 0, sizeof(Socket));
-		listenSockets->insert(socket);
+		listenSockets.insert(socket);
 		return socket;
 	}
 	
@@ -50,97 +69,83 @@ namespace net {
 		Event* event = Event::Allocate();
 		event->buffer_or_ip.Write(ip, strlen(ip)+1);
 		event->port = port;
-		event->context = this;
+		event->context = self.lock();
 		event->type = Event::SOCKET_CONNECT;
 		loop->PushEvent(event);
 	}
 	
-	Socket* Context::InternalConnect(const char* ip, int port) {
-		us_socket_t* us_socket = us_socket_context_connect(ssl, context, ip,
-				port, NULL, 0, sizeof(Socket));
-		return (Socket*)us_socket_ext(ssl, us_socket);
-	}
-
-	void Context::Destructor() {
-		loop->contexts->erase(this);
-		if(onNewSocket)
-			delete onNewSocket;
-		onNewSocket = NULL;
-		if(onReceiveMessage)
-			delete onReceiveMessage;
-		onReceiveMessage = NULL;
-		for(auto* s : *listenSockets) {
-			// TODO stop listening -> kill listen socket ?? does it work
-			us_listen_socket_close(ssl, s);
-		}
-		delete listenSockets;
-		listenSockets = NULL;
-		for(auto* s : *sockets) {
-			s->InternalClose();
-		}
-		delete sockets;
-		sockets = NULL;
+	void Context::InternalConnect(const char* ip, int port) {
+		us_socket_context_connect(ssl, context, ip, port, NULL, 0,
+				sizeof(std::shared_ptr<Socket>*));
 	}
 
 	struct us_socket_t* Context::InternalOnDataSsl(struct us_socket_t* socket,
 			char* data, int length) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s = **(std::shared_ptr<Socket>**)
+			us_socket_ext(1, socket);
 		s->OnData((uint8_t*)data, length);
 		return socket;
 	}
 
 	struct us_socket_t* Context::InternalOnOpenSsl(struct us_socket_t* socket,
 			int isClient, char* ip, int ipLength) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s(new Socket());
+		*(std::shared_ptr<Socket>**)us_socket_ext(1, socket) =
+			new std::shared_ptr<Socket>(s);
+		
 		s->ssl = 1;
+		s->self = s;
 		s->socket = socket;
-		s->context = (Context*)us_socket_context_ext(1,
-				us_socket_context(1, socket));
-		s->loop = (Loop*)us_loop_ext(us_socket_context_loop(1,
-					s->context->context));
-		s->onReceiveMessage = s->context->onReceiveMessage;
+		s->context = **(std::shared_ptr<Context>**)
+			us_socket_context_ext(1, us_socket_context(1, socket));
+		s->loop = s->context->loop;
 
 		s->OnOpen(ip, ipLength);
-
-		if(s->context)
-			s->context->onNewSocket->operator()(s, isClient, *s->remoteIp);
+		s->context->onNewSocket(s, isClient, s->remoteIp);
 
 		return socket;
 	}
 
 	struct us_socket_t* Context::InternalOnEndSsl(struct us_socket_t* socket) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s = **(std::shared_ptr<Socket>**)
+			us_socket_ext(1, socket);
 		s->OnEnd();
 		return socket;
 	}
 
 	struct us_socket_t* Context::InternalOnCloseSsl(struct us_socket_t* socket,
 			int code, void* reason) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s = **(std::shared_ptr<Socket>**)
+			us_socket_ext(1, socket);
+		if(s->context->onCloseSocket)
+			s->context->onCloseSocket(s, code, reason);
 		s->OnClose(code, reason);
-		if(s->context->onCloseSocket && *s->context->onCloseSocket)
-			(*s->context->onCloseSocket)(s, code, reason);
 		return socket;
 	}
 
 	struct us_socket_t* Context::InternalOnTimeoutSsl(
 			struct us_socket_t* socket) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s = **(std::shared_ptr<Socket>**)
+			us_socket_ext(1, socket);
 		s->OnTimeout();
 		return socket;
 	}
 
 	struct us_socket_t* Context::InternalOnWritableSsl(
 			struct us_socket_t* socket) {
-		Socket* s = (Socket*)us_socket_ext(1, socket);
+		std::shared_ptr<Socket> s = **(std::shared_ptr<Socket>**)
+			us_socket_ext(1, socket);
 		s->OnWritable();
 		return socket;
 	}
 
-	Context* Context::Make(Loop* loop,
-			std::function<void(Socket*, bool, std::string)> onNewSocket,
-			std::function<void(Socket*, int, void*)> onCloseSocket,
-			std::function<void(Buffer&, Socket*)> onReceiveMessage,
+	std::shared_ptr<Context> Context::Make(std::shared_ptr<Loop> loop,
+			std::function<void(std::shared_ptr<Socket>, bool, std::string)>
+				onNewSocket,
+			std::function<void(std::shared_ptr<Socket>, int, void*)>
+				onCloseSocket,
+			std::function<void(Buffer&, std::shared_ptr<Socket>)>
+				onReceiveMessage,
 			const char* keyFileName, const char* certFileName,
 			const char* caFileName, const char* passphrase) {
 		if(keyFileName == NULL || certFileName == NULL || caFileName == NULL) {
@@ -155,29 +160,30 @@ namespace net {
 		options.passphrase = passphrase;
 		options.ca_file_name = caFileName;
 		us_socket_context_t* context = us_create_socket_context(1, loop->loop,
-				sizeof(Context), options);
+				sizeof(std::shared_ptr<Context>*), options);
 
 		us_socket_context_on_open(1, context, Context::InternalOnOpenSsl);
 		us_socket_context_on_data(1, context, Context::InternalOnDataSsl);
-		us_socket_context_on_writable(1, context, Context::InternalOnWritableSsl);
+		us_socket_context_on_writable(1, context,
+				Context::InternalOnWritableSsl);
 		us_socket_context_on_close(1, context, Context::InternalOnCloseSsl);
 		us_socket_context_on_timeout(1, context, Context::InternalOnTimeoutSsl);
 		us_socket_context_on_end(1, context, Context::InternalOnEndSsl);
 
-		Context* c = (Context*)us_socket_context_ext(1, context);
-
-		c->sockets = new std::set<Socket*>();
-		c->listenSockets = new std::set<us_listen_socket_t*>();
+		std::shared_ptr<Context> c(new Context());
+		*((std::shared_ptr<Context>**)us_socket_context_ext(1, context)) =
+			new std::shared_ptr<Context>(c);
+		c->self = c;
 
 		c->context = context;
 		c->loop = loop;
 		c->userData = NULL;
-		c->onNewSocket = new decltype(onNewSocket)(onNewSocket);
-		c->onReceiveMessage = new decltype(onReceiveMessage)(onReceiveMessage);
-		c->onCloseSocket = new decltype(onCloseSocket)(onCloseSocket);
+		c->onNewSocket = onNewSocket;
+		c->onReceiveMessage = onReceiveMessage;
+		c->onCloseSocket = onCloseSocket;
 		c->ssl = 1;
 
-		loop->contexts->insert(c);
+		loop->contexts.insert(c);
 
 		return c;
 	}

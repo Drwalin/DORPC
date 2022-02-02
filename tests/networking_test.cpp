@@ -14,9 +14,9 @@ std::atomic<int> received_counter = 0;
 #include <Debug.hpp>
 
 void process(int portOpen, int portOther, int id) {
-	net::Loop *loop = net::Loop::Make();
-	net::Context* context = net::Context::Make(loop, [=](
-				net::Socket* socket,
+	std::shared_ptr<net::Loop> loop = net::Loop::Make();
+	std::shared_ptr<net::Context> context = net::Context::Make(loop, [=](
+				std::shared_ptr<net::Socket> socket,
 				bool isClient, std::string ip) {
 				net::Buffer buffer;
 				char str[1024];
@@ -25,9 +25,9 @@ void process(int portOpen, int portOther, int id) {
 				buffer.Write(str, strlen(str)+1);
 				socket->Send(buffer);
 			},
-			[=](net::Socket* socket, int ec, void* edata) {
+			[=](std::shared_ptr<net::Socket> socket, int ec, void* edata) {
 			},
-			[=](net::Buffer& buffer, net::Socket* socket) {
+			[=](net::Buffer& buffer, std::shared_ptr<net::Socket> socket) {
 				std::string_view v((char*)buffer.Data(), buffer.Size()-1);
 				bool valid = v.starts_with("Hello from ")
 						&& v.ends_with(", has been sent");

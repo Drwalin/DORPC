@@ -32,34 +32,27 @@
 #include "../Debug.hpp"
 
 namespace net {
-	void Socket::Init(struct us_socket_t* socket, int ssl) {
-		this->socket = socket;
-		this->ssl = ssl;
-		context = (Context*)us_socket_context_ext(ssl,
-				us_socket_context(ssl, socket));
-		loop = context->loop;
-		userData = NULL;
-		remoteIp = NULL;
+	Socket::~Socket() {
 	}
-
+	
 	void Socket::OnOpen(char* ip, int ipLength) {
-		remoteIp = new std::string(TranslateIp(ip, ipLength));
-		context->sockets->insert(this);
+		remoteIp = std::string(TranslateIp(ip, ipLength));
+		context->sockets.insert(self.lock());
 		bytes_to_receive = 0;
 		received_bytes_of_size = 0;
 	}
 
 	void Socket::OnEnd() {
 		buffer.Destroy();
-		context->sockets->erase(this);
+		context->sockets.erase(self.lock());
 	}
 
 	void Socket::OnClose(int code, void* reason) {
-		if(remoteIp)
-			delete remoteIp;
-		remoteIp = NULL;
+		remoteIp.clear();
 		buffer.Destroy();
-		context->sockets->erase(this);
+		delete *(std::shared_ptr<Socket>**)us_socket_ext(1, socket);
+		*(std::shared_ptr<Socket>**)us_socket_ext(1, socket) = NULL;
+		context->sockets.erase(self.lock());
 	}
 
 	void Socket::OnTimeout() {
@@ -93,8 +86,8 @@ namespace net {
 				length -= bytes_to_copy;
 				bytes_to_receive -= bytes_to_copy;
 				if(bytes_to_receive == 0) {
-					if(onReceiveMessage) {
-						(*onReceiveMessage)(buffer, this);
+					if(context->onReceiveMessage) {
+						context->onReceiveMessage(buffer, self.lock());
 					}
 					buffer.Clear();
 					received_bytes_of_size = 0;
@@ -107,7 +100,7 @@ namespace net {
 		Event* event = Event::Allocate();
 		event->after = NULL;
 		event->buffer_or_ip = std::move(sendBuffer);
-		event->socket = this;
+		event->socket = self.lock();
 		event->listenSocket = NULL;
 		event->type = Event::SOCKET_SEND;
 		if(loop == Loop::ThisThreadLoop())
@@ -134,6 +127,7 @@ namespace net {
 		} else {
 			us_socket_close_connecting(ssl, socket);
 		}
+		socket = NULL;
 	}
 }
 

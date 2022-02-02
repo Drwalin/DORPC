@@ -41,7 +41,7 @@ namespace net {
 					port);
 			break;
 		case LISTEN_SOCKET_STOP:
-			context->listenSockets->erase(listenSocket);
+			context->listenSockets.erase(listenSocket);
 			us_listen_socket_close(context->ssl, listenSocket);
 			break;
 
@@ -56,14 +56,14 @@ namespace net {
 			break;
 		
 		case ALLCAST_LOOP:
-			for(Context* c : *loop->contexts) {
-				for(Socket* s : *c->sockets) {
+			for(std::shared_ptr<Context> c : loop->contexts) {
+				for(std::shared_ptr<Socket> s : c->sockets) {
 					s->InternalSend(buffer_or_ip);
 				}
 			}
 			break;
 		case ALLCAST_CONTEXT:
-			for(Socket* s : *context->sockets) {
+			for(std::shared_ptr<Socket> s : context->sockets) {
 				s->InternalSend(buffer_or_ip);
 			}
 			break;
@@ -81,8 +81,12 @@ namespace net {
 	}
 
 	void Event::Free(Event* event) {
-		if(event)
+		if(event) {
+			event->socket = NULL;
+			event->context = NULL;
+			event->loop = NULL;
 			impl::eventPool.release(event);
+		}
 	}
 }
 
