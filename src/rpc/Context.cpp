@@ -22,6 +22,7 @@
 #include <sstream>
 #include <thread>
 #include <chrono>
+#include <memory>
 
 #include <libusockets.h>
 
@@ -64,11 +65,20 @@ namespace rpc {
 	}
 	
 	void Context::AsyncRun() {
-		runningThread = std::thread([](Context* c) {
+		std::shared_ptr<std::atomic<int>> flag(new std::atomic<int>(0));
+		runningThread = std::thread([](Context* c,
+					std::shared_ptr<std::atomic<int>> flag) {
+				*flag = 1;
 				if(c->IsRunning())
 					return;
 				c->Run();
-			}, this);
+			}, this, flag);
+	auto end = std::chrono::high_resolution_clock::now() +
+		std::chrono::seconds(4);
+		while(end>std::chrono::high_resolution_clock::now()
+				&& *flag==0) {
+			std::this_thread::sleep_for(std::chrono::milliseconds(1));
+		}
 	}
 	
 	void Context::Listen(const char* ip, int port) {
