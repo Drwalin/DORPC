@@ -23,24 +23,22 @@
 #include "../Debug.hpp"
 
 namespace net {
-	Loop*& Loop::ThisThreadLoop() {
-		static thread_local Loop* thread_loop = NULL;
-		return thread_loop;
+	Loop::~Loop() {
+		// TODO force close loop running thread
+		delete *(std::shared_ptr<Loop>**)us_loop_ext(loop);
+		*(std::shared_ptr<Loop>**)us_loop_ext(loop) = NULL;
 	}
 	
-	void Loop::InternalDestructor() {
-		delete events;
-		events = NULL;
-		delete contexts;
-		contexts = NULL;
-		us_loop_free(loop);
+	std::shared_ptr<Loop>& Loop::ThisThreadLoop() {
+		static thread_local std::shared_ptr<Loop> thread_loop = NULL;
+		return thread_loop;
 	}
 
 	void Loop::Run() {
 		if(ThisThreadLoop() != NULL)
 			throw "Cannot run loop on thread with already running loop.";
 		running = true;
-		ThisThreadLoop() = this;
+		ThisThreadLoop() = self.lock();
 		us_loop_run(loop);
 		ThisThreadLoop() = NULL;
 		running = false;
@@ -48,20 +46,21 @@ namespace net {
 
 	void Loop::PushEvent(Event* event) {
 		event->defer = 0;
-		events->push(event);
+		events.push(event);
 		us_wakeup_loop(loop);
 	}
 
 	void Loop::DeferEvent(int defer, Event* event) {
 		event->defer = defer;
-		events->push(event);
+		events.push(event);
 		us_wakeup_loop(loop);
 	}
 
 	void Loop::PopEvents() {
+		
 		Event* event;
 		std::vector<Event*> deferedEvents;
-		while((event = events->pop()) != NULL) {
+		while((event = events.pop()) != NULL) {
 			if(event->defer > 0) {
 				deferedEvents.emplace_back(event);
 			} else {
@@ -73,7 +72,7 @@ namespace net {
 			}
 		}
 		for(size_t i=0; i<deferedEvents.size(); ++i) {
-			events->push(deferedEvents[i]);
+			events.push(deferedEvents[i]);
 		}
 		deferedEvents.clear();
 	}
@@ -91,26 +90,27 @@ namespace net {
 	}
 
 	void Loop::InternalOnWakeup(struct us_loop_t* loop) {
-		((Loop*)us_loop_ext(loop))->OnWakeup();
+		(**((std::shared_ptr<Loop>**)us_loop_ext(loop)))->OnWakeup();
 	}
 
 	void Loop::InternalOnPre(struct us_loop_t* loop) {
-		((Loop*)us_loop_ext(loop))->OnPre();
+		(**((std::shared_ptr<Loop>**)us_loop_ext(loop)))->OnPre();
 	}
 
 	void Loop::InternalOnPost(struct us_loop_t* loop) {
-		((Loop*)us_loop_ext(loop))->OnPost();
+		(**((std::shared_ptr<Loop>**)us_loop_ext(loop)))->OnPost();
 	}
 
-	Loop* Loop::Make() {
+	std::shared_ptr<Loop> Loop::Make() {
 		struct us_loop_t* us_loop = us_create_loop(0, InternalOnWakeup,
-				InternalOnPre, InternalOnPost, sizeof(Loop));
-		Loop* loop = (Loop*)us_loop_ext(us_loop);
+				InternalOnPre, InternalOnPost, sizeof(std::shared_ptr<Loop>*));
+		std::shared_ptr<Loop> loop(new Loop());
+		*((std::shared_ptr<Loop>**)us_loop_ext(us_loop)) =
+			new std::shared_ptr<Loop>(loop);
 		loop->loop = us_loop;
 		loop->userData = NULL;
 		loop->running = false;
-		loop->events = new concurrent::mpsc::queue<Event>();
-		loop->contexts = new std::set<Context*>();
+		loop->self = loop;
 		return loop;
 	}
 }

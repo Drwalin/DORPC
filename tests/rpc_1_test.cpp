@@ -63,7 +63,7 @@ int main(int argc, char** argv) {
 	REGISTER_FUNCTION(functionB);
 	REGISTER_FUNCTION(functionC);
 	
-	rpc::Context context([](net::Socket* socket, rpc::Context* context,
+	rpc::Context context([](std::shared_ptr<net::Socket> socket, rpc::Context* context,
 			bool isClient, std::string ip) {
 				uint32_t id = socket->userData32;
 				TEST(functionA, id, 1, 0, 'a', 'b', 'c');
@@ -77,7 +77,7 @@ int main(int argc, char** argv) {
 				TEST(functionB, id, 9, "", "C_:", {1, 2, 0}, {"__4", "__5", "_6"});
 				TEST(functionB, id, 10, "", "++:", {1, 2, 0}, {"_9", "_10", "_11"});
 			},
-			[](net::Socket* socket, rpc::Context* context, int, void*) {
+			[](std::shared_ptr<net::Socket> socket, rpc::Context* context, int, void*) {
 				socket->InternalClose();
 				exit(1);
 			},

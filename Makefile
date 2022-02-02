@@ -80,5 +80,5 @@ bin/%.o: src/%.cpp src/%.hpp
 .PHONY: clean
 clean:
 	(cd uSockets ; make clean)
-	$(RM) $(OBJECTS) $(LIBFILE) $(TESTS)
+	$(RM) $(OBJECTS) $(LIBFILE) $(TESTS) bin/tests/*
 

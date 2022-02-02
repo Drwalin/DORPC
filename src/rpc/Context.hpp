@@ -36,9 +36,9 @@
 namespace rpc {
 	class Context {
 	public:
-		Context(std::function<void(net::Socket*,
+		Context(std::function<void(std::shared_ptr<net::Socket>,
 					Context*, bool, std::string)> onOpenSocket,
-				std::function<void(net::Socket*, Context*,
+				std::function<void(std::shared_ptr<net::Socket>, Context*,
 					int, void*)> onCloseSocket,
 				std::function<void(net::Event& event)> onFailedSend,
 				const char* keyFileName, const char* certFileName,
@@ -55,7 +55,7 @@ namespace rpc {
 		static void InitSingleton(Context* context);
 		
 		void Connect(const char* ip, int port);
-		net::Socket* InternalConnect(const char* ip, int port);
+		void InternalConnect(const char* ip, int port);
 		void Disconnect(uint32_t socketId);
 		
 		void Call(uint32_t socketId, net::Buffer&& message);
@@ -67,30 +67,31 @@ namespace rpc {
 		static void ExecuteDisconnectEvent(net::Event& event);
 		static void ExecuteSendEvent(net::Event& event);
 		
-		static void InternalOnOpenSocket(net::Socket* socket, bool isClient,
-				std::string ip);
-		static void InternalOnCloseSocket(net::Socket* socket, int ec,
-				void* edata);
-		static void InternalOnMessage(net::Buffer& buffer, net::Socket* socket);
+		static void InternalOnOpenSocket(std::shared_ptr<net::Socket> socket,
+				bool isClient, std::string ip);
+		static void InternalOnCloseSocket(std::shared_ptr<net::Socket> socket,
+				int ec, void* edata);
+		static void InternalOnMessage(net::Buffer& buffer,
+				std::shared_ptr<net::Socket> socket);
 		
-		uint32_t AssignSocketIdToSocket(net::Socket* socket);
+		uint32_t AssignSocketIdToSocket(std::shared_ptr<net::Socket> socket);
 		
-		std::function<void(net::Socket*, Context*, bool, std::string)>
-			onOpenSocket;
-		std::function<void(net::Socket*, Context*, int,
+		std::function<void(std::shared_ptr<net::Socket>, Context*, bool,
+				std::string)> onOpenSocket;
+		std::function<void(std::shared_ptr<net::Socket>, Context*, int,
 				void*)> onCloseSocket;
 		std::function<void(net::Event& event)> onFailedSend;
 		
 		std::thread runningThread;
 		bool running;
 		
-		std::unordered_map<uint32_t, net::Socket*> sockets;
+		std::unordered_map<uint32_t, std::shared_ptr<net::Socket>> sockets;
 		uint32_t socketIdCounter;
 		
 	public:
 		
-		net::Loop* loop;
-		net::Context* context;
+		std::shared_ptr<net::Loop> loop;
+		std::shared_ptr<net::Context> context;
 	};
 	
 	template<auto func>

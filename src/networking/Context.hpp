@@ -21,32 +21,41 @@
 
 #include <functional>
 #include <set>
+#include <memory>
 #include <libusockets.h>
 
 #include "Buffer.hpp"
 #include "Socket.hpp"
 
 namespace net {
-	struct Context {
+	class Context {
+	private:
+		Context() = default;
+	public:
+		
+		~Context();
+		
 		struct us_socket_context_t* context;
-		struct Loop* loop;
+		std::shared_ptr<Loop> loop;
 		void* userData;
-		std::function<void(Socket*, bool, std::string)> *onNewSocket;
-		std::function<void(Socket*, int, void*)> *onCloseSocket;
-		std::function<void(Buffer&, Socket*)> *onReceiveMessage;
+		std::function<void(std::shared_ptr<Socket>, bool, std::string)>
+			onNewSocket;
+		std::function<void(std::shared_ptr<Socket>, int, void*)> onCloseSocket;
+		std::function<void(Buffer&, std::shared_ptr<Socket>)> onReceiveMessage;
 		int ssl;
-		std::set<Socket*>* sockets;
-		std::set<struct us_listen_socket_t*>* listenSockets;
+		std::weak_ptr<Context> self;
+		std::set<std::shared_ptr<Socket>> sockets;
+		std::set<struct us_listen_socket_t*> listenSockets;
 
+		
+		void CloseAll();
 
 		void StartListening(const char* host, int port);
 		struct us_listen_socket_t* InternalStartListening(const char* host,
 				int port);
 		
-		Socket* InternalConnect(const char* ip, int port);
+		void InternalConnect(const char* ip, int port);
 		void Connect(const char* ip, int port);
-
-		void Destructor();
 
 
 		static struct us_socket_t* InternalOnOpenSsl(struct us_socket_t* socket,
@@ -56,16 +65,20 @@ namespace net {
 		static struct us_socket_t* InternalOnDataSsl(struct us_socket_t* socket,
 				char* data, int length);
 		static struct us_socket_t* InternalOnEndSsl(struct us_socket_t* socket);
-		static struct us_socket_t* InternalOnCloseSsl(struct us_socket_t* socket,
-				int code, void* reason);
-		static struct us_socket_t* InternalOnTimeoutSsl(struct us_socket_t* socket);
+		static struct us_socket_t* InternalOnCloseSsl(
+				struct us_socket_t* socket, int code, void* reason);
+		static struct us_socket_t* InternalOnTimeoutSsl(
+				struct us_socket_t* socket);
 		static struct us_socket_t* InternalOnWritableSsl(
 				struct us_socket_t* socket);
 
-		static Context* Make(Loop* loop,
-				std::function<void(Socket*, bool, std::string)> onNewSocket,
-				std::function<void(Socket*, int, void*)> onCloseSocket,
-				std::function<void(Buffer&, Socket*)> onReceiveMessage,
+		static std::shared_ptr<Context> Make(std::shared_ptr<Loop> loop,
+				std::function<void(std::shared_ptr<Socket>, bool, std::string)>
+					onNewSocket,
+				std::function<void(std::shared_ptr<Socket>, int, void*)>
+					onCloseSocket,
+				std::function<void(Buffer&, std::shared_ptr<Socket>)>
+					onReceiveMessage,
 				const char* keyFileName, const char* certFileName,
 				const char* caFileName, const char* passphrase);
 	};

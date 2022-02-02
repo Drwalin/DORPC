@@ -21,22 +21,27 @@
 
 #include <mpsc_queue.hpp>
 #include <set>
+#include <memory>
 
 #include "Event.hpp"
 
 namespace net {
-	struct Loop {
+	class Loop {
+	private:
+		Loop() = default;
+	public:
+		
+		~Loop();
+		
 		struct us_loop_t* loop;
-		void * userData;
+		void* userData;
 		bool running;
-
-		concurrent::mpsc::queue<Event> *events;
-		std::set<Context*> *contexts;
+		concurrent::mpsc::queue<Event> events;
+		std::set<std::shared_ptr<Context>> contexts;
+		std::weak_ptr<Loop> self;
 		
 		
-		static Loop*& ThisThreadLoop();
-		
-		void InternalDestructor();
+		static std::shared_ptr<Loop>& ThisThreadLoop();
 
 		void Run();
 
@@ -53,7 +58,7 @@ namespace net {
 		static void InternalOnPre(struct us_loop_t* loop);
 		static void InternalOnPost(struct us_loop_t* loop);
 
-		static Loop* Make();
+		static std::shared_ptr<Loop> Make();
 	};
 }
 

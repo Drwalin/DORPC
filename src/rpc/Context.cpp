@@ -29,9 +29,9 @@
 
 namespace rpc {
 	Context::Context(
-			std::function<void(net::Socket*, Context*,
+			std::function<void(std::shared_ptr<net::Socket>, Context*,
 				bool, std::string)> onOpenSocket,
-			std::function<void(net::Socket*, Context*,
+			std::function<void(std::shared_ptr<net::Socket>, Context*,
 				int, void*)> onCloseSocket,
 			std::function<void(net::Event& event)> onFailedSend,
 			const char* keyFileName, const char* certFileName,
@@ -98,8 +98,8 @@ namespace rpc {
 	
 	
 	
-	net::Socket* Context::InternalConnect(const char* ip, int port) {
-		return context->InternalConnect(ip, port);
+	void Context::InternalConnect(const char* ip, int port) {
+		context->InternalConnect(ip, port);
 	}
 	
 	void Context::Connect(const char* ip, int port) {
@@ -152,8 +152,8 @@ namespace rpc {
 	
 	
 	
-	void Context::InternalOnOpenSocket(net::Socket* socket, bool isClient,
-			std::string ip) {
+	void Context::InternalOnOpenSocket(std::shared_ptr<net::Socket> socket,
+			bool isClient, std::string ip) {
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
 			context->AssignSocketIdToSocket(socket);
@@ -164,8 +164,8 @@ namespace rpc {
 		}
 	}
 	
-	void Context::InternalOnCloseSocket(net::Socket* socket, int ec,
-			void* edata) {
+	void Context::InternalOnCloseSocket(std::shared_ptr<net::Socket> socket,
+			int ec, void* edata) {
 		Context* context = (Context*)(socket->context->userData);
 		if(context) {
 			if(context->onCloseSocket)
@@ -176,7 +176,8 @@ namespace rpc {
 		}
 	}
 	
-	void Context::InternalOnMessage(net::Buffer& buffer, net::Socket* socket) {
+	void Context::InternalOnMessage(net::Buffer& buffer,
+			std::shared_ptr<net::Socket> socket) {
 		Context* context = (Context*)
 			socket->context->userData;
 		if(context) {
@@ -187,7 +188,8 @@ namespace rpc {
 	
 	
 	
-	uint32_t Context::AssignSocketIdToSocket(net::Socket* socket) {
+	uint32_t Context::AssignSocketIdToSocket(
+			std::shared_ptr<net::Socket> socket) {
 		for(;;) {
 			uint32_t id = ++socketIdCounter;
 			if(id==0 || sockets.contains(id)) {
