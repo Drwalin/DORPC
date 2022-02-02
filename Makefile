@@ -6,6 +6,7 @@ CXX = g++
 CXXFLAGS = -flto -pipe -std=c++2a -pedantic -Wall -IuSockets/src -lpthread
 LIBS=
 LIBFILE=libdorpc.a
+USOCKETSFLAGS=
 
 ifeq ($(DEBUG),1)
 	CXXFLAGS += -ggdb -g -pg
@@ -21,6 +22,8 @@ else
 	LIBS += -L/usr/lib -ldl -lz
 	CXXFLAGS += -fPIC
 	CXXFLAGS += -I/usr/include
+	LIBS += -luv
+	USOCKETSFLAGS += USE_LIBUV=1
 endif
 LIBS += -lpthread -lssl -lcrypto
 
@@ -66,7 +69,7 @@ run: $(TESTS)
 # uSockets:
 
 uSockets/uSockets.a:
-	cd uSockets ; make $(MFLAGS)
+	cd uSockets ; make $(MFLAGS) $(USOCKETSFLAGS)
 
 
 # objects:

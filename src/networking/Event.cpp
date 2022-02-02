@@ -37,34 +37,62 @@ namespace net {
 	void Event::Run() {
 		switch(type) {
 		case LISTEN_SOCKET_START:
-			context->InternalStartListening((const char*)buffer_or_ip.Data(),
-					port);
+			if(context) {
+				context->InternalStartListening(
+						(const char*)buffer_or_ip.Data(), port);
+			} else {
+				// TODO error
+			}
 			break;
 		case LISTEN_SOCKET_STOP:
-			context->listenSockets.erase(listenSocket);
-			us_listen_socket_close(context->ssl, listenSocket);
+			if(context) {
+				context->listenSockets.erase(listenSocket);
+				us_listen_socket_close(context->ssl, listenSocket);
+			} else {
+				// TODO error
+			}
 			break;
 
 		case SOCKET_CONNECT:
-			context->InternalConnect((char*)buffer_or_ip.Data(), port);
+			if(context) {
+				context->InternalConnect((char*)buffer_or_ip.Data(), port);
+			} else {
+				// TODO error
+			}
 			break;
 		case SOCKET_CLOSE:
-			socket->InternalClose();
+			if(socket) {
+				socket->InternalClose();
+			} else {
+				// TODO error
+			}
 			break;
 		case SOCKET_SEND:
-			socket->InternalSend(buffer_or_ip);
+			if(socket) {
+				socket->InternalSend(buffer_or_ip);
+			} else {
+				// TODO error
+			}
 			break;
 		
 		case ALLCAST_LOOP:
-			for(std::shared_ptr<Context> c : loop->contexts) {
-				for(std::shared_ptr<Socket> s : c->sockets) {
-					s->InternalSend(buffer_or_ip);
+			if(loop) {
+				for(std::shared_ptr<Context> c : loop->contexts) {
+					for(std::shared_ptr<Socket> s : c->sockets) {
+						s->InternalSend(buffer_or_ip);
+					}
 				}
+			} else {
+				// TODO error
 			}
 			break;
 		case ALLCAST_CONTEXT:
-			for(std::shared_ptr<Socket> s : context->sockets) {
-				s->InternalSend(buffer_or_ip);
+			if(context) {
+				for(std::shared_ptr<Socket> s : context->sockets) {
+					s->InternalSend(buffer_or_ip);
+				}
+			} else {
+				// TODO error
 			}
 			break;
 

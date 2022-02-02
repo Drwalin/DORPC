@@ -57,7 +57,6 @@ namespace net {
 	}
 
 	void Loop::PopEvents() {
-		
 		Event* event;
 		std::vector<Event*> deferedEvents;
 		while((event = events.pop()) != NULL) {

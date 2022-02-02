@@ -37,8 +37,7 @@ void process(int portOpen, int portOther, int id) {
 					fflush(stdout);
 					exit(1);
 				} else {
-					received_counter++;
-					if(received_counter == 4) {
+					if(++received_counter == 4) {
 						printf(" tests 4/4 ... OK\n\n");
 						fflush(stdout);
 						exit(0);
@@ -47,16 +46,14 @@ void process(int portOpen, int portOther, int id) {
 			},
 			"cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
 	
-	//if(id == 0)
-		context->InternalStartListening("127.0.0.1", portOpen);
-	//else
-		context->Connect("127.0.0.1", portOther);
 	try {
+		context->InternalStartListening("127.0.0.1", portOpen);
+		context->Connect("127.0.0.1", portOther);
 		loop->Run();
 	} catch (...) {
 		printf(" EXCEPTION... FAILED\n\n");
 		fflush(stdout);
-		exit(0);
+		exit(1);
 	}
 }
 

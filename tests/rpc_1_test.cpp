@@ -19,7 +19,6 @@ void validate(int id, bool result) {
 			invalid++;
 			printf(" test %i ... FAILED\n", id);
 		}
-		++total;
 	}
 }
 
@@ -68,7 +67,7 @@ int main(int argc, char** argv) {
 				uint32_t id = socket->userData32;
 				TEST(functionA, id, 1, 0, 'a', 'b', 'c');
 				TEST(functionA, id, 2, 0, 'd', 'e', 'f');
-				TEST(functionA, id, 3, 0, 'g', 'h', 'i');
+				TEST(functionA, id, 3, 0, 'g', 'h'*3.12341f, 'i');
 				TEST(functionA, id, 4, 0, 'j', 'k', 'l');
 				TEST(functionA, id, 5, 0, 'm', 'n', 'o');
 				TEST(functionA, id, 6, 0, 'r', 'q', 'p');
@@ -86,14 +85,19 @@ int main(int argc, char** argv) {
 			"cert/user.key", "cert/user.crt", "cert/rootca.crt", NULL);
 	
 	context.InternalListen("127.0.0.1", PORT);
-	context.Connect("127.0.0.1", PORT);
+	int count = 1;//507;
+	for(int i=0; i<count; ++i)
+		context.Connect("127.0.0.1", PORT);
 	
 	context.AsyncRun();
 	
-	std::this_thread::sleep_for(std::chrono::milliseconds(100));
+	total = count*20;
+	
+ 	//std::this_thread::sleep_for(std::chrono::milliseconds(30));
 	auto end = std::chrono::high_resolution_clock::now() +
 		std::chrono::seconds(20);
-	while(total != 20 && end>std::chrono::high_resolution_clock::now()
+	while(total != (valid+invalid)
+			&& end>std::chrono::high_resolution_clock::now()
 			&& context.IsRunning()) {
 		std::this_thread::sleep_for(std::chrono::milliseconds(1));
 	}

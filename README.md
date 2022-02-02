@@ -133,8 +133,8 @@ PointersRange can cover milions or bilions of pointers.
 -------|--------|------------|------
 \+| 1  | Basic networking | Passing messages - byte arrays of given data size TCP(TLS) / UDP(DTLS)
 \+| 2  | Serialization |
-\>| 3  | Direct two way RPC | By function id without any type safety mechanism
-| | 4  | RPC cd. | With function name synchronisation between nodes to universal translation from function name to id. Slave (connection initializer) requests master function table.
+\+| 3  | Direct two way RPC | By function id without any type safety mechanism
+| | 4  | RPC cd. | With function name synchronisation between nodes for universal translation from function name to id. Slave (connection initializer) requests master function table.
 | | 5  | RPC cd. | With type safety (type as part of function name)
 | | 6  | Routing ; automatic leader election | Leader provides nodes with theirs id's ; some uniform data
 | | 7  | RPC (by NodeID)
