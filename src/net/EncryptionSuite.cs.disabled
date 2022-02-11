@@ -1,0 +1,24 @@
+
+using System.Security.Cryptography;
+
+namespace net {
+	class SymmetricEncryption {
+		private ECDiffieHellman ecdh;
+		private byte[] publicKey;
+		private ChaCha20Poly1305 chacha = null;
+		
+		private static ECCurve CURVE = ECCurve.NamedCurves.nistP521;
+		private static HashAlgorithmName HASH = HashAlgorithmName.SHA512;
+		
+		public SymmetricEncryption() {
+			RegenerateEcdh();
+		}
+		
+		public void RegenerateEcdh() {
+			ecdh = new ECDiffieHellman(CURVE);
+			publicKey = ecdh.ExportSubjectPublicKeyInfo();
+			chacha = null;
+		}
+	}
+}
+
